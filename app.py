@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-🛰️ RADAR DE LICITACIONES AAPP · PASIONA
+RADAR DE LICITACIONES AAPP · PASIONA
 Demo conectada EN VIVO a la fuente oficial de contratación pública de Catalunya
 (Datos Abiertos Generalitat · Plataforma de Serveis de Contractació Pública).
 
@@ -12,52 +12,93 @@ FILTROS PASIONA (definidos por Dirección y Talent):
        3. Servicios UX
        4. Servicios Agile
        5. Consultoría IA
-    Todo lo que quede fuera de estas capacidades → FUERA DE RADAR.
 
-Categorías CON MOTIVO:
-   🟢 PRESENTAR · 🟡 DUDOSO · 🔵 TIC (bajo importe) · ⚪ DESCARTAR · 🔴 FUERA
+Categorías: 🟢 PRESENTAR · 🟡 DUDOSO · 🔵 TIC (bajo importe) · ⚪ DESCARTAR · 🔴 FUERA
+Colores corporativos (Manual de marca Pasiona):
+  Naranja #EA7600 · Gris #97999B · Gris425 #515151 · Casinegro #252525
 
 Coste de infraestructura: 0 €
 Autora: Dori Portales · Pasiona Consulting · 2026
 """
 
+import base64
 import datetime as dt
+from pathlib import Path
+
 import requests
 import pandas as pd
 import streamlit as st
 
 # ────────────────────────────────────────────────────────────────────────────
-# CONFIGURACIÓN
+# CONFIGURACIÓN + MARCA
 # ────────────────────────────────────────────────────────────────────────────
+NARANJA = "#EA7600"
+GRIS = "#97999B"
+GRIS425 = "#515151"
+CASINEGRO = "#252525"
+
 st.set_page_config(page_title="Radar de Licitaciones · Pasiona",
                    page_icon="🛰️", layout="wide")
+
+# Tipografía corporativa (Open Sans, cercana a la del manual) + estilos globales
+st.markdown(
+    f"""
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      html, body, [class*="css"], .stMarkdown, .stDataFrame {{
+          font-family: 'Open Sans', sans-serif;
+      }}
+      .block-container {{ padding-top: 1.5rem; }}
+      /* Cabecera */
+      .cab {{
+          background: {NARANJA}; padding: 22px 30px; border-radius: 12px;
+          display: flex; align-items: center; gap: 20px; margin-bottom: 4px;
+      }}
+      .cab-logo {{ height: 46px; }}
+      .cab-txt h1 {{ color:#fff; font-size:28px; font-weight:800; margin:0; }}
+      .cab-txt p  {{ color:#fff; font-size:13px; margin:4px 0 0 0; opacity:.95; }}
+      /* Tarjetas métricas */
+      .mcard {{ padding:16px 10px; border-radius:12px; text-align:center; }}
+      .mcard .n {{ color:#fff; font-size:26px; font-weight:800; line-height:1; }}
+      .mcard .l {{ color:#fff; font-size:11px; margin-top:4px; opacity:.95; }}
+      /* Pie */
+      .pie {{
+          margin-top:34px; padding:16px 0; border-top:1px solid #e6e6e6;
+          color:{GRIS}; font-size:12px; text-align:center;
+      }}
+      .pie b {{ color:{NARANJA}; }}
+      /* Aviso */
+      div[data-testid="stAlert"] {{ border-radius:10px; }}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 API_PSCP = "https://analisi.transparenciacatalunya.cat/resource/ybgg-dgi6.json"
 DETALLE_PSCP = "https://contractaciopublica.cat/ca/detall-publicacio/{}"
 
-# ── FILTROS PASIONA · Umbral económico (Ernest Pagès, 06/07/2026) ────────────
+# ── FILTROS PASIONA · Umbral económico (Ernest Pagès) ────────────────────────
 IMPORTE_MIN = 50000
 IMPORTE_MAX = 300000
 SARA_SERVICIOS = 221000
 
-# ── FILTROS PASIONA · Capacidades reales (Txema Salabert, 06/07/2026) ────────
+# ── FILTROS PASIONA · Capacidades reales (Txema Salabert) ────────────────────
 LISTA_BLANCA = {
     "Desarrollo con IA": [
-        "intel·ligència artificial", "inteligencia artificial",
-        "machine learning", "aprenentatge automàtic", "aprendizaje automático",
-        "model de llenguatge", "modelo de lenguaje", "llm",
-        "copilot", "github copilot", "anthropic", "openai", "chatgpt",
-        "ia generativa", "ia generatia", "intel·ligència generativa",
-        "generative ai", "chatbot", "agent conversacional",
-        "assistent virtual", "asistente virtual",
+        "intel·ligència artificial", "inteligencia artificial", "machine learning",
+        "aprenentatge automàtic", "aprendizaje automático", "model de llenguatge",
+        "modelo de lenguaje", "llm", "copilot", "github copilot", "anthropic",
+        "openai", "chatgpt", "ia generativa", "intel·ligència generativa",
+        "generative ai", "chatbot", "agent conversacional", "assistent virtual",
+        "asistente virtual",
     ],
     "Desarrollo .NET": [
         ".net", "dotnet", " c# ", "asp.net", "blazor", "entity framework",
         "desenvolupament d'aplicacions", "desarrollo de aplicaciones",
         "desenvolupament de programari", "desarrollo de software",
         "aplicació web", "aplicación web", "aplicacions a mida", "aplicaciones a medida",
-        "desenvolupament a mida", "desarrollo a medida",
-        "microserveis", "microservicios", "desenvolupament d'api", "desarrollo de api",
+        "desenvolupament a mida", "desarrollo a medida", "microserveis",
+        "microservicios", "desenvolupament d'api", "desarrollo de api",
     ],
     "Servicios UX": [
         "experiència d'usuari", "experiencia de usuario", " ux ", " ux/ui", "ux/ui",
@@ -81,20 +122,16 @@ LISTA_BLANCA = {
     ],
 }
 
-# ── Software / TIC genérico (encaja pero sin área concreta) ──────────────────
-# Se evalúa DESPUÉS de descartadas/no-tic: captura mantenimientos y plataformas
-# digitales que son claramente TIC aunque no se sepa la tecnología exacta.
 TIC_GENERICO = [
     "programari", "software", "aplicació", "aplicación", "aplicacions", "aplicaciones",
-    "aplicatiu", "aplicativo", "plataforma digital", "portal web", "seu electrònica",
-    "sede electrónica", "sistema d'informació", "sistema de información",
+    "aplicatiu", "aplicativo", "app ", "plataforma digital", "portal web",
+    "seu electrònica", "sede electrónica", "sistema d'informació", "sistema de información",
     "solució digital", "solución digital", "eina digital", "herramienta digital",
     "manteniment informàtic", "mantenimiento informático", "evolutiu", "evolutivo",
     "digitalització", "digitalización", "transformació digital", "transformación digital",
     "administració electrònica", "administración electrónica",
 ]
 
-# ── Ámbitos DESCARTADOS por Dirección (→ FUERA) ──────────────────────────────
 DESCARTADAS = {
     "Oracle": ["oracle", "data guard", "exadata"],
     "Java/Spring": [" java", "spring boot", "j2ee", "jakarta ee"],
@@ -110,17 +147,16 @@ DESCARTADAS = {
                                   "parc informàtic", "parque informático",
                                   "llocs de treball", "puestos de trabajo",
                                   "equips informàtics", "equipos informáticos"],
-    "Infraestructura/Redes/Seguridad ops": ["cablejat", "cableado", "electrònica de xarxa",
-                                            "firewall", "servidors físics", "servidores físicos",
-                                            "datacenter", "centre de dades", " cpd ",
-                                            "còpies de seguretat", "copias de seguridad",
-                                            "videovigilància", "videovigilancia"],
+    "Infraestructura/Redes": ["cablejat", "cableado", "electrònica de xarxa",
+                              "firewall", "servidors físics", "servidores físicos",
+                              "datacenter", "centre de dades", " cpd ",
+                              "còpies de seguretat", "copias de seguridad",
+                              "videovigilància", "videovigilancia"],
     "ERP/Business Central/Dynamics": ["business central", "dynamics", "navision",
                                       " erp ", " sage ", "gestió comptable",
                                       "gestión contable"],
 }
 
-# ── Patrones NO-TIC (→ FUERA por sector) ─────────────────────────────────────
 NO_TIC = {
     "Obra civil / arquitectura": ["obres ", " obra ", "edifici", "edificio", "construcció",
                                   "construcción", "arquitect", "enginyeria civil",
@@ -140,7 +176,9 @@ NO_TIC = {
                              "protecció de dades", "protección de datos",
                              "delegat de protecció", "delegado de protección",
                              "manteniment dels pianos", "piano", "actuacions forestals",
-                             "forestal", "dinamització comunitària", "casal de barri"],
+                             "forestal", "dinamització comunitària", "casal de barri",
+                             "imatge gràfica", "imagen gráfica", "disseny gràfic",
+                             "diseño gráfico"],
 }
 
 
@@ -163,9 +201,19 @@ CAMPOS_URL = ["enllac_publicacio", "enllac", "url_publicacio"]
 CAMPOS_EXP = ["codi_expedient", "expedient"]
 
 
+def logo_b64() -> str:
+    """Carga el logo blanco desde el repo si existe (para la cabecera naranja)."""
+    for nombre in ["logo_pasiona_blanco.png", "logo_blanco.png",
+                   "logo_pasiona_bl_negatiu.png", "logo.png"]:
+        p = Path(nombre)
+        if p.exists():
+            return base64.b64encode(p.read_bytes()).decode()
+    return ""
+
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def cargar(limite: int) -> pd.DataFrame:
-    headers = {"User-Agent": "RadarPasiona/2.3"}
+    headers = {"User-Agent": "RadarPasiona/3.0"}
     intentos = [
         {"$limit": limite, "$order": ":id DESC"},
         {"$limit": limite},
@@ -209,48 +257,36 @@ def detecta_lista(texto: str, palabras) -> bool:
 
 
 def clasificar(fila: dict, c_obj: str, c_imp: str) -> tuple[str, str, str]:
-    """
-    Aplica los FILTROS PASIONA.
-    Categorías: 🟢 PRESENTAR · 🟡 DUDOSO · 🔵 TIC (bajo importe) · ⚪ DESCARTAR · 🔴 FUERA
-    """
     objeto = str(fila.get(c_obj, "") or "")
     importe = num(fila.get(c_imp, 0))
 
-    # 1) NO-TIC por sector → FUERA
     sector, _ = detecta(objeto, NO_TIC)
     if sector:
         return "🔴 FUERA", "—", f"No-TIC · {sector}"
 
-    # 2) Tecnología descartada por Dirección → FUERA
     desc, _ = detecta(objeto, DESCARTADAS)
     if desc:
-        return "🔴 FUERA", "—", f"Fuera de capacidades Pasiona · {desc}"
+        return "🔴 FUERA", "—", f"Fuera de capacidades · {desc}"
 
-    # 3) ¿Encaja en una de las 5 áreas de la LISTA BLANCA?
     area, _ = detecta(objeto, LISTA_BLANCA)
-
-    # 3b) Si no encaja en un área concreta, ¿es TIC genérico (software/plataforma)?
     if not area and detecta_lista(objeto, TIC_GENERICO):
-        area = "TIC (software/plataforma)"
+        area = "Software / plataforma"
 
     if area:
         if importe == 0:
-            return "🟡 DUDOSO", area, f"Encaja en {area}, pero sin importe publicado (verificar)"
+            return "🟡 DUDOSO", area, "Sin importe publicado (verificar)"
         if importe < IMPORTE_MIN:
             return "🔵 TIC (bajo importe)", area, \
-                f"{area} · importe {importe:,.0f}€ < mínimo 50.000€".replace(",", ".")
+                f"Importe {importe:,.0f}€ < mínimo 50.000€".replace(",", ".")
         if importe > IMPORTE_MAX:
             return "🟡 DUDOSO", area, \
-                f"{area} · importe {importe:,.0f}€ supera 300.000€ (suele ir a grandes)".replace(",", ".")
+                f"Importe {importe:,.0f}€ supera 300.000€".replace(",", ".")
         if importe >= SARA_SERVICIOS:
-            return "🟡 DUDOSO", area, \
-                f"{area} · zona SARA ({importe:,.0f}€): verificar PCAP".replace(",", ".")
+            return "🟡 DUDOSO", area, f"Zona SARA ({importe:,.0f}€): verificar".replace(",", ".")
         franja = "A" if importe < 80000 else ("B" if importe < 150000 else "C")
-        return "🟢 PRESENTAR", area, \
-            f"Capacidad Pasiona: {area} · franja {franja} ({importe:,.0f}€)".replace(",", ".")
+        return "🟢 PRESENTAR", area, f"Franja {franja} ({importe:,.0f}€)".replace(",", ".")
 
-    # 4) No encaja en ninguna capacidad Pasiona
-    return "🔴 FUERA", "—", "No encaja en las 5 capacidades Pasiona (lista blanca)"
+    return "🔴 FUERA", "—", "No encaja en las 5 capacidades Pasiona"
 
 
 def fmt_eur(v) -> str:
@@ -259,9 +295,8 @@ def fmt_eur(v) -> str:
 
 
 def fmt_fecha(v) -> str:
-    """Convierte 2026-09-21T14:00:00.000 en 21/09/2026. Vacío/nan → —."""
     s = str(v or "").strip()
-    if not s or s.lower() == "nan" or s.lower() == "none":
+    if not s or s.lower() in ("nan", "none"):
         return "—"
     if len(s) >= 10 and s[4:5] == "-":
         try:
@@ -272,21 +307,27 @@ def fmt_fecha(v) -> str:
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# CABECERA
+# CABECERA con logo
 # ────────────────────────────────────────────────────────────────────────────
+_logo = logo_b64()
+_logo_html = (f'<img src="data:image/png;base64,{_logo}" class="cab-logo">'
+              if _logo else '<div style="font-size:40px;">🛰️</div>')
+
 st.markdown(
-    """
-    <div style="background:#EA7600;padding:22px 28px;border-radius:10px;margin-bottom:6px;">
-      <div style="color:white;font-size:30px;font-weight:800;">🛰️ Radar de Licitaciones AAPP · Pasiona</div>
-      <div style="color:white;font-size:14px;margin-top:6px;">
-        Conectado <b>en vivo</b> a la fuente oficial · Plataforma de Serveis de Contractació Pública
-        (Generalitat de Catalunya) · Coste de infraestructura: 0 €
+    f"""
+    <div class="cab">
+      {_logo_html}
+      <div class="cab-txt">
+        <h1>Radar de Licitaciones AAPP</h1>
+        <p>Conectado <b>en vivo</b> a la fuente oficial · Plataforma de Serveis de Contractació
+           Pública (Generalitat de Catalunya) · Coste de infraestructura: 0 €</p>
       </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
+# ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("⚙️ Parámetros del barrido")
     n_reg = st.slider("Publicaciones a analizar", 100, 1000, 400, step=100)
@@ -300,7 +341,8 @@ with st.sidebar:
     )
     st.divider()
     st.markdown(
-        "**FILTROS PASIONA aplicados**\n\n"
+        f"<b style='color:{NARANJA}'>FILTROS PASIONA aplicados</b>", unsafe_allow_html=True)
+    st.markdown(
         "**Económico (Ernest Pagès):** mínimo **50.000 €**, techo 300.000 € / SARA.\n\n"
         "**Capacidades (Txema Salabert):** solo estas 5 áreas —\n"
         "1. Desarrollo con IA (Claude, GitHub)\n"
@@ -313,6 +355,7 @@ with st.sidebar:
         "El Estado (PLACSP) se integra en la siguiente fase."
     )
 
+# ── Carga ────────────────────────────────────────────────────────────────────
 try:
     with st.spinner("Conectando con la fuente oficial y aplicando Filtros Pasiona…"):
         df = cargar(n_reg)
@@ -334,25 +377,25 @@ c_exp = primer_campo(muestra, CAMPOS_EXP)
 
 res = df.apply(lambda f: clasificar(f, c_obj, c_imp), axis=1, result_type="expand")
 df["Categoría"] = res[0]
-df["Capacidad"] = res[1]
+df["Área"] = res[1]
 df["Motivo"] = res[2]
 
+# ── Métricas ─────────────────────────────────────────────────────────────────
 cols = st.columns(6)
 tot = len(df)
 metricas = [
-    ("Publicaciones", None, "#252525"),
-    ("🟢 Presentar", "🟢 PRESENTAR", "#28a745"),
-    ("🟡 Dudoso", "🟡 DUDOSO", "#f0a500"),
+    ("Publicaciones", None, CASINEGRO),
+    ("🟢 Presentar", "🟢 PRESENTAR", "#2e9e4f"),
+    ("🟡 Dudoso", "🟡 DUDOSO", "#e0a400"),
     ("🔵 TIC baja", "🔵 TIC (bajo importe)", "#2b7de9"),
-    ("⚪ Descartar", "⚪ DESCARTAR", "#8a8d91"),
-    ("🔴 Fuera", "🔴 FUERA", "#dc3545"),
+    ("⚪ Descartar", "⚪ DESCARTAR", GRIS),
+    ("🔴 Fuera", "🔴 FUERA", "#c0392b"),
 ]
 for col, (etq, cat, color) in zip(cols, metricas):
     valor = tot if cat is None else int((df["Categoría"] == cat).sum())
     col.markdown(
-        f"""<div style="background:{color};padding:14px;border-radius:10px;text-align:center;">
-        <div style="color:white;font-size:26px;font-weight:800;">{valor}</div>
-        <div style="color:white;font-size:11px;">{etq}</div></div>""",
+        f"""<div class="mcard" style="background:{color};">
+        <div class="n">{valor}</div><div class="l">{etq}</div></div>""",
         unsafe_allow_html=True,
     )
 
@@ -367,15 +410,17 @@ if n_verde == 0:
     st.info(
         f"ℹ️ Hoy no hay licitaciones **🟢 PRESENTAR** en Catalunya que cumplan capacidad Pasiona "
         f"**y** importe ≥ 50.000 €. Se han detectado **{n_tic}** licitaciones TIC de nuestras "
-        f"áreas por debajo del mínimo económico (categoría 🔵). El radar ha cribado {tot} "
-        f"publicaciones en segundos."
+        f"áreas por debajo del mínimo económico (🔵). El radar ha cribado {tot} publicaciones "
+        f"en segundos."
     )
 
+# ── Filtros de vista ─────────────────────────────────────────────────────────
 vista = df[df["Categoría"].isin(cats_sel)].copy()
 if palabra and c_obj:
     vista = vista[vista[c_obj].astype(str).str.contains(palabra, case=False, na=False)]
 
-cols_map = {"Categoría": "Categoría", "Capacidad": "Capacidad Pasiona", "Motivo": "Motivo"}
+# ── Tabla (columna Área fusionada, Motivo limpio) ────────────────────────────
+cols_map = {"Categoría": "Categoría", "Área": "Área Pasiona", "Motivo": "Motivo"}
 if c_obj:
     cols_map[c_obj] = "Objeto del contrato"
 if c_org:
@@ -397,14 +442,15 @@ elif c_exp and c_exp in vista.columns:
     tabla["Expediente"] = vista[c_exp].astype(str).apply(lambda x: DETALLE_PSCP.format(x))
 
 if vista.empty:
-    st.success("✅ No hay licitaciones en las categorías seleccionadas con los filtros actuales. "
-               "Prueba a marcar también ⚪ DESCARTAR y 🔴 FUERA para ver todo lo cribado.")
+    st.success("✅ No hay licitaciones en las categorías seleccionadas. "
+               "Marca también ⚪ DESCARTAR y 🔴 FUERA para ver todo lo cribado.")
 else:
     st.dataframe(
         tabla, use_container_width=True, hide_index=True,
         column_config={
             "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato", width="large"),
-            "Motivo": st.column_config.TextColumn("Motivo", width="medium"),
+            "Motivo": st.column_config.TextColumn("Motivo", width="small"),
+            "Área Pasiona": st.column_config.TextColumn("Área Pasiona", width="small"),
             "Expediente": st.column_config.LinkColumn("Expediente", display_text="Abrir ↗"),
         },
     )
@@ -427,21 +473,17 @@ with st.expander("ℹ️ Qué hace y qué no hace esta demo"):
           **5 áreas** donde Pasiona tiene capacidad real (Desarrollo con IA, Desarrollo .NET,
           Servicios UX, Servicios Agile y Consultoría IA). El resto queda 🔴 FUERA.
 
-        **Las 5 categorías:**
-        - 🟢 **PRESENTAR** — encaja en capacidad e importe.
-        - 🟡 **DUDOSO** — encaja, pero hay que verificar (importe alto/SARA o sin importe).
-        - 🔵 **TIC (bajo importe)** — es de nuestras áreas o software genérico, pero por
-          debajo de 50.000 €.
-        - ⚪ **DESCARTAR** — cae por importe u otro filtro.
-        - 🔴 **FUERA** — no-TIC o tecnología fuera de las capacidades Pasiona.
+        **Categorías:** 🟢 PRESENTAR · 🟡 DUDOSO · 🔵 TIC (bajo importe) · ⚪ DESCARTAR · 🔴 FUERA.
 
-        **Qué NO hace todavía (fase de producto):**
-        - Leer el pliego completo (PCAP/PPT) para el matiz fino.
-        - Memoria de decisiones previas de Dirección.
-        - Cobertura del Estado (PLACSP) y otras fuentes.
-        - Valoración con IA de cada caso frontera.
-
-        La clasificación se basa en el **objeto del contrato** publicado por la fuente oficial;
-        los casos límite conviene revisarlos con criterio experto.
+        **Qué NO hace todavía (fase de producto):** leer el pliego completo (PCAP/PPT),
+        memoria de decisiones previas, cobertura del Estado (PLACSP) y valoración con IA de
+        cada caso frontera. La clasificación se basa en el objeto del contrato publicado.
         """
     )
+
+# ── Pie con marca ────────────────────────────────────────────────────────────
+st.markdown(
+    f"""<div class="pie"><b>pasiona</b> · Radar de Licitaciones AAPP · Demo {dt.date.today():%Y} ·
+    Fuente oficial: Datos Abiertos Generalitat de Catalunya (PSCP)</div>""",
+    unsafe_allow_html=True,
+)
