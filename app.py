@@ -138,11 +138,31 @@ CAMPO_TIPUS = "tipus_contracte"
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def cargar(limite: int) -> pd.DataFrame:
-    params = {"$limit": limite, "$order": ":id DESC", "$q": "licitaci"}
-    r = requests.get(API_PSCP, params=params, timeout=45,
-                     headers={"User-Agent": "RadarPasiona/2.0"})
-    r.raise_for_status()
-    return pd.DataFrame(r.json())
+    """
+    Descarga robusta desde la fuente oficial (PSCP Catalunya).
+    Prueba varias estrategias de consulta y se queda con la primera que
+    devuelva registros, para no quedarse nunca en blanco.
+    """
+    headers = {"User-Agent": "RadarPasiona/2.1"}
+    intentos = [
+        {"$limit": limite, "$order": ":id DESC"},                       # 1) últimas publicaciones
+        {"$limit": limite},                                              # 2) sin orden (más permisiva)
+        {"$limit": limite, "$order": "data_publicacio_anunci DESC"},     # 3) por fecha de anuncio
+    ]
+    ultimo_error = None
+    for params in intentos:
+        try:
+            r = requests.get(API_PSCP, params=params, timeout=45, headers=headers)
+            r.raise_for_status()
+            datos = r.json()
+            if datos:
+                return pd.DataFrame(datos)
+        except Exception as e:  # noqa: BLE001
+            ultimo_error = e
+            continue
+    if ultimo_error:
+        raise ultimo_error
+    return pd.DataFrame()
 
 
 def num(v) -> float:
