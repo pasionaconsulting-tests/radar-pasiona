@@ -4,19 +4,13 @@ RADAR DE LICITACIONES AAPP · PASIONA
 Demo conectada EN VIVO a la fuente oficial de contratación pública de Catalunya
 (Datos Abiertos Generalitat · Plataforma de Serveis de Contractació Pública).
 
-FILTROS PASIONA (definidos por Dirección y Talent):
+FILTROS PASIONA (Dirección y Talent):
   · Umbral económico (Ernest Pagès): mínimo 50.000 € · techo 300.000 € / SARA
-  · Capacidades reales (Txema Salabert): LISTA BLANCA de 5 áreas
-       1. Desarrollo con IA (Claude, GitHub)
-       2. Desarrollo .NET
-       3. Servicios UX
-       4. Servicios Agile
-       5. Consultoría IA
+  · Capacidades reales (Txema Salabert): 5 áreas (IA, .NET, UX, Agile, Consultoría IA)
 
-Categorías: 🟢 PRESENTAR · 🟡 DUDOSO · 🔵 TIC (bajo importe) · ⚪ DESCARTAR · 🔴 FUERA
-Colores corporativos (Manual de marca Pasiona):
-  Naranja #EA7600 · Gris #97999B · Gris425 #515151 · Casinegro #252525
-
+Diseño sobrio corporativo · Manual de marca Pasiona
+  Primarios: Naranja #EA7600 · Casinegro #252525
+  Secundarios: Gris #97999B · Gris425 #515151 · fondos claros
 Coste de infraestructura: 0 €
 Autora: Dori Portales · Pasiona Consulting · 2026
 """
@@ -29,46 +23,66 @@ import requests
 import pandas as pd
 import streamlit as st
 
-# ────────────────────────────────────────────────────────────────────────────
-# CONFIGURACIÓN + MARCA
-# ────────────────────────────────────────────────────────────────────────────
+# ── Paleta (manual de marca) ─────────────────────────────────────────────────
 NARANJA = "#EA7600"
-GRIS = "#97999B"
-GRIS425 = "#515151"
 CASINEGRO = "#252525"
+GRIS425 = "#515151"
+GRIS = "#97999B"
+GRIS_CLARO = "#F4F4F5"
+BORDE = "#E6E6E8"
 
 st.set_page_config(page_title="Radar de Licitaciones · Pasiona",
                    page_icon="🛰️", layout="wide")
 
-# Tipografía corporativa (Open Sans, cercana a la del manual) + estilos globales
+# ── Estilos globales (sobrio, mucho aire, naranja solo de acento) ────────────
 st.markdown(
     f"""
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
       html, body, [class*="css"], .stMarkdown, .stDataFrame {{
-          font-family: 'Open Sans', sans-serif;
+          font-family: 'Open Sans', sans-serif; color: {CASINEGRO};
       }}
-      .block-container {{ padding-top: 1.5rem; }}
-      /* Cabecera */
+      .block-container {{ padding-top: 2rem; max-width: 1250px; }}
+      #MainMenu, footer {{ visibility: hidden; }}
+
+      /* Cabecera: fondo blanco, logo contenido, línea naranja fina */
       .cab {{
-          background: {NARANJA}; padding: 22px 30px; border-radius: 12px;
-          display: flex; align-items: center; gap: 20px; margin-bottom: 4px;
+          display:flex; align-items:center; gap:22px;
+          padding: 6px 4px 18px 4px; border-bottom: 3px solid {NARANJA};
+          margin-bottom: 26px;
       }}
-      .cab-logo {{ height: 46px; }}
-      .cab-txt h1 {{ color:#fff; font-size:28px; font-weight:800; margin:0; }}
-      .cab-txt p  {{ color:#fff; font-size:13px; margin:4px 0 0 0; opacity:.95; }}
-      /* Tarjetas métricas */
-      .mcard {{ padding:16px 10px; border-radius:12px; text-align:center; }}
-      .mcard .n {{ color:#fff; font-size:26px; font-weight:800; line-height:1; }}
-      .mcard .l {{ color:#fff; font-size:11px; margin-top:4px; opacity:.95; }}
-      /* Pie */
-      .pie {{
-          margin-top:34px; padding:16px 0; border-top:1px solid #e6e6e6;
-          color:{GRIS}; font-size:12px; text-align:center;
+      .cab-logo {{ height: 40px; width:auto; }}
+      .cab-sep  {{ width:1px; height:42px; background:{BORDE}; }}
+      .cab-tit  {{ font-size:22px; font-weight:700; color:{CASINEGRO}; line-height:1.15; }}
+      .cab-sub  {{ font-size:12.5px; color:{GRIS425}; margin-top:3px; font-weight:400; }}
+
+      /* Métricas: tarjetas blancas, sobrias, con punto de color */
+      .mrow {{ display:flex; gap:14px; margin-bottom:8px; flex-wrap:wrap; }}
+      .mcard {{
+          flex:1; min-width:150px; background:#fff; border:1px solid {BORDE};
+          border-radius:10px; padding:16px 18px;
       }}
-      .pie b {{ color:{NARANJA}; }}
-      /* Aviso */
+      .mcard .top {{ display:flex; align-items:center; gap:7px; }}
+      .mcard .dot {{ width:9px; height:9px; border-radius:50%; }}
+      .mcard .lbl {{ font-size:11.5px; color:{GRIS425}; font-weight:600;
+                     text-transform:uppercase; letter-spacing:.3px; }}
+      .mcard .num {{ font-size:30px; font-weight:700; color:{CASINEGRO};
+                     margin-top:6px; line-height:1; }}
+      .mcard.dest {{ border-color:{NARANJA}; }}
+
+      /* Caption */
+      .cap {{ color:{GRIS}; font-size:12px; margin:4px 2px 20px 2px; }}
+
+      /* Footer centrado y discreto */
+      .pie {{ margin-top:40px; padding-top:18px; border-top:1px solid {BORDE};
+              color:{GRIS}; font-size:11.5px; text-align:center; line-height:1.7; }}
+      .pie b {{ color:{NARANJA}; font-weight:700; }}
+
       div[data-testid="stAlert"] {{ border-radius:10px; }}
+      section[data-testid="stSidebar"] {{ background:{GRIS_CLARO}; }}
+      section[data-testid="stSidebar"] h1,
+      section[data-testid="stSidebar"] h2,
+      section[data-testid="stSidebar"] h3 {{ color:{CASINEGRO}; }}
     </style>
     """,
     unsafe_allow_html=True,
@@ -77,12 +91,10 @@ st.markdown(
 API_PSCP = "https://analisi.transparenciacatalunya.cat/resource/ybgg-dgi6.json"
 DETALLE_PSCP = "https://contractaciopublica.cat/ca/detall-publicacio/{}"
 
-# ── FILTROS PASIONA · Umbral económico (Ernest Pagès) ────────────────────────
 IMPORTE_MIN = 50000
 IMPORTE_MAX = 300000
 SARA_SERVICIOS = 221000
 
-# ── FILTROS PASIONA · Capacidades reales (Txema Salabert) ────────────────────
 LISTA_BLANCA = {
     "Desarrollo con IA": [
         "intel·ligència artificial", "inteligencia artificial", "machine learning",
@@ -182,9 +194,7 @@ NO_TIC = {
 }
 
 
-# ────────────────────────────────────────────────────────────────────────────
-# UTILIDADES
-# ────────────────────────────────────────────────────────────────────────────
+# ── Utilidades ───────────────────────────────────────────────────────────────
 def primer_campo(fila: dict, candidatos) -> str:
     for c in candidatos:
         if c in fila:
@@ -201,19 +211,25 @@ CAMPOS_URL = ["enllac_publicacio", "enllac", "url_publicacio"]
 CAMPOS_EXP = ["codi_expedient", "expedient"]
 
 
-def logo_b64() -> str:
-    """Carga el logo blanco desde el repo si existe (para la cabecera naranja)."""
-    for nombre in ["logo_pasiona_blanco.png", "logo_blanco.png",
-                   "logo_pasiona_bl_negatiu.png", "logo.png"]:
-        p = Path(nombre)
+def logo_b64():
+    """Busca el logo (color preferido, blanco de respaldo). Devuelve (b64, tipo)."""
+    color = ["Logo_Pasiona.png", "logo_pasiona.png", "Logo_RGB.png", "logo_rgb.png",
+             "Logo_Pasiona_color.png"]
+    blanco = ["logo_pasiona_blanco.png", "Logo_Pasiona_Blanco.png"]
+    for n in color:
+        p = Path(n)
         if p.exists():
-            return base64.b64encode(p.read_bytes()).decode()
-    return ""
+            return base64.b64encode(p.read_bytes()).decode(), "color"
+    for n in blanco:
+        p = Path(n)
+        if p.exists():
+            return base64.b64encode(p.read_bytes()).decode(), "blanco"
+    return "", ""
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def cargar(limite: int) -> pd.DataFrame:
-    headers = {"User-Agent": "RadarPasiona/3.0"}
+    headers = {"User-Agent": "RadarPasiona/3.1"}
     intentos = [
         {"$limit": limite, "$order": ":id DESC"},
         {"$limit": limite},
@@ -263,7 +279,6 @@ def clasificar(fila: dict, c_obj: str, c_imp: str) -> tuple[str, str, str]:
     sector, _ = detecta(objeto, NO_TIC)
     if sector:
         return "🔴 FUERA", "—", f"No-TIC · {sector}"
-
     desc, _ = detecta(objeto, DESCARTADAS)
     if desc:
         return "🔴 FUERA", "—", f"Fuera de capacidades · {desc}"
@@ -274,19 +289,16 @@ def clasificar(fila: dict, c_obj: str, c_imp: str) -> tuple[str, str, str]:
 
     if area:
         if importe == 0:
-            return "🟡 DUDOSO", area, "Sin importe publicado (verificar)"
+            return "🟡 DUDOSO", area, "Sin importe publicado"
         if importe < IMPORTE_MIN:
-            return "🔵 TIC (bajo importe)", area, \
-                f"Importe {importe:,.0f}€ < mínimo 50.000€".replace(",", ".")
+            return "🔵 TIC (bajo importe)", area, "Por debajo de 50.000 €"
         if importe > IMPORTE_MAX:
-            return "🟡 DUDOSO", area, \
-                f"Importe {importe:,.0f}€ supera 300.000€".replace(",", ".")
+            return "🟡 DUDOSO", area, "Supera 300.000 €"
         if importe >= SARA_SERVICIOS:
-            return "🟡 DUDOSO", area, f"Zona SARA ({importe:,.0f}€): verificar".replace(",", ".")
+            return "🟡 DUDOSO", area, "Zona SARA: verificar"
         franja = "A" if importe < 80000 else ("B" if importe < 150000 else "C")
-        return "🟢 PRESENTAR", area, f"Franja {franja} ({importe:,.0f}€)".replace(",", ".")
-
-    return "🔴 FUERA", "—", "No encaja en las 5 capacidades Pasiona"
+        return "🟢 PRESENTAR", area, f"Franja {franja}"
+    return "🔴 FUERA", "—", "No encaja en las 5 capacidades"
 
 
 def fmt_eur(v) -> str:
@@ -306,21 +318,23 @@ def fmt_fecha(v) -> str:
     return s
 
 
-# ────────────────────────────────────────────────────────────────────────────
-# CABECERA con logo
-# ────────────────────────────────────────────────────────────────────────────
-_logo = logo_b64()
-_logo_html = (f'<img src="data:image/png;base64,{_logo}" class="cab-logo">'
-              if _logo else '<div style="font-size:40px;">🛰️</div>')
+# ── CABECERA (blanca, sobria) ────────────────────────────────────────────────
+_logo, _tipo = logo_b64()
+if _logo:
+    _logo_html = f'<img src="data:image/png;base64,{_logo}" class="cab-logo">'
+else:
+    _logo_html = (f'<span style="font-size:24px;font-weight:700;color:{GRIS};">'
+                  f'pasiona<span style="color:{NARANJA};">●</span></span>')
 
 st.markdown(
     f"""
     <div class="cab">
       {_logo_html}
-      <div class="cab-txt">
-        <h1>Radar de Licitaciones AAPP</h1>
-        <p>Conectado <b>en vivo</b> a la fuente oficial · Plataforma de Serveis de Contractació
-           Pública (Generalitat de Catalunya) · Coste de infraestructura: 0 €</p>
+      <div class="cab-sep"></div>
+      <div>
+        <div class="cab-tit">Radar de Licitaciones AAPP</div>
+        <div class="cab-sub">Conectado en vivo a la fuente oficial · Plataforma de Serveis de
+          Contractació Pública (Generalitat de Catalunya) · Coste de infraestructura: 0 €</div>
       </div>
     </div>
     """,
@@ -329,10 +343,10 @@ st.markdown(
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.header("⚙️ Parámetros del barrido")
+    st.header("Parámetros del barrido")
     n_reg = st.slider("Publicaciones a analizar", 100, 1000, 400, step=100)
     st.divider()
-    st.subheader("🔍 Filtros de vista")
+    st.subheader("Filtros de vista")
     palabra = st.text_input("Buscar en el objeto del contrato", "")
     cats_sel = st.multiselect(
         "Mostrar categorías",
@@ -340,29 +354,27 @@ with st.sidebar:
         default=["🟢 PRESENTAR", "🟡 DUDOSO", "🔵 TIC (bajo importe)"],
     )
     st.divider()
+    st.markdown(f"<b style='color:{NARANJA}'>Filtros Pasiona aplicados</b>",
+                unsafe_allow_html=True)
     st.markdown(
-        f"<b style='color:{NARANJA}'>FILTROS PASIONA aplicados</b>", unsafe_allow_html=True)
-    st.markdown(
-        "**Económico (Ernest Pagès):** mínimo **50.000 €**, techo 300.000 € / SARA.\n\n"
-        "**Capacidades (Txema Salabert):** solo estas 5 áreas —\n"
+        "**Económico (Ernest Pagès):** mínimo 50.000 €, techo 300.000 € / SARA.\n\n"
+        "**Capacidades (Txema Salabert):**\n"
         "1. Desarrollo con IA (Claude, GitHub)\n"
         "2. Desarrollo .NET\n"
         "3. Servicios UX\n"
         "4. Servicios Agile\n"
         "5. Consultoría IA\n\n"
-        "_El resto queda FUERA (sin capacidad para abordarlo)._\n\n"
-        "**Fuente oficial:** Datos Abiertos Generalitat · PSCP. Ámbito: Catalunya. "
-        "El Estado (PLACSP) se integra en la siguiente fase."
+        "_El resto queda fuera de radar._\n\n"
+        "**Fuente oficial:** Datos Abiertos Generalitat · PSCP. Ámbito: Catalunya."
     )
 
 # ── Carga ────────────────────────────────────────────────────────────────────
 try:
-    with st.spinner("Conectando con la fuente oficial y aplicando Filtros Pasiona…"):
+    with st.spinner("Conectando con la fuente oficial…"):
         df = cargar(n_reg)
 except Exception as e:  # noqa: BLE001
-    st.error(f"No se ha podido conectar con la fuente oficial ahora mismo. Detalle: {e}")
+    st.error(f"No se ha podido conectar con la fuente oficial. Detalle: {e}")
     st.stop()
-
 if df.empty:
     st.warning("La fuente oficial no ha devuelto registros. Prueba de nuevo en unos minutos.")
     st.stop()
@@ -380,46 +392,44 @@ df["Categoría"] = res[0]
 df["Área"] = res[1]
 df["Motivo"] = res[2]
 
-# ── Métricas ─────────────────────────────────────────────────────────────────
-cols = st.columns(6)
+# ── Métricas sobrias (tarjetas blancas + punto de color) ─────────────────────
 tot = len(df)
-metricas = [
-    ("Publicaciones", None, CASINEGRO),
-    ("🟢 Presentar", "🟢 PRESENTAR", "#2e9e4f"),
-    ("🟡 Dudoso", "🟡 DUDOSO", "#e0a400"),
-    ("🔵 TIC baja", "🔵 TIC (bajo importe)", "#2b7de9"),
-    ("⚪ Descartar", "⚪ DESCARTAR", GRIS),
-    ("🔴 Fuera", "🔴 FUERA", "#c0392b"),
+defs = [
+    ("Publicaciones", None, GRIS, False),
+    ("Presentar", "🟢 PRESENTAR", "#2e9e4f", True),
+    ("Dudoso", "🟡 DUDOSO", "#e0a400", False),
+    ("TIC bajo importe", "🔵 TIC (bajo importe)", "#2b7de9", False),
+    ("Descartar", "⚪ DESCARTAR", GRIS, False),
+    ("Fuera de radar", "🔴 FUERA", "#c0392b", False),
 ]
-for col, (etq, cat, color) in zip(cols, metricas):
+cards = ""
+for etq, cat, color, dest in defs:
     valor = tot if cat is None else int((df["Categoría"] == cat).sum())
-    col.markdown(
-        f"""<div class="mcard" style="background:{color};">
-        <div class="n">{valor}</div><div class="l">{etq}</div></div>""",
-        unsafe_allow_html=True,
-    )
+    cls = "mcard dest" if (dest and valor > 0) else "mcard"
+    cards += (f'<div class="{cls}"><div class="top"><span class="dot" '
+              f'style="background:{color};"></span><span class="lbl">{etq}</span></div>'
+              f'<div class="num">{valor}</div></div>')
+st.markdown(f'<div class="mrow">{cards}</div>', unsafe_allow_html=True)
 
-st.caption(
-    f"Barrido en vivo · {dt.datetime.now():%d/%m/%Y %H:%M} · fuente oficial PSCP Catalunya · "
-    "clasificación según Filtros Pasiona (Ernest + Txema)"
+st.markdown(
+    f'<div class="cap">Barrido en vivo · {dt.datetime.now():%d/%m/%Y %H:%M} · '
+    f'fuente oficial PSCP Catalunya · clasificación según Filtros Pasiona (Ernest + Txema)</div>',
+    unsafe_allow_html=True,
 )
 
 n_verde = int((df["Categoría"] == "🟢 PRESENTAR").sum())
 n_tic = int((df["Categoría"] == "🔵 TIC (bajo importe)").sum())
 if n_verde == 0:
     st.info(
-        f"ℹ️ Hoy no hay licitaciones **🟢 PRESENTAR** en Catalunya que cumplan capacidad Pasiona "
-        f"**y** importe ≥ 50.000 €. Se han detectado **{n_tic}** licitaciones TIC de nuestras "
-        f"áreas por debajo del mínimo económico (🔵). El radar ha cribado {tot} publicaciones "
-        f"en segundos."
+        f"Hoy no hay licitaciones **Presentar** en Catalunya que cumplan capacidad Pasiona "
+        f"y importe ≥ 50.000 €. Se han detectado **{n_tic}** licitaciones TIC de nuestras áreas "
+        f"por debajo del mínimo económico. El radar ha cribado {tot} publicaciones en segundos."
     )
 
-# ── Filtros de vista ─────────────────────────────────────────────────────────
 vista = df[df["Categoría"].isin(cats_sel)].copy()
 if palabra and c_obj:
     vista = vista[vista[c_obj].astype(str).str.contains(palabra, case=False, na=False)]
 
-# ── Tabla (columna Área fusionada, Motivo limpio) ────────────────────────────
 cols_map = {"Categoría": "Categoría", "Área": "Área Pasiona", "Motivo": "Motivo"}
 if c_obj:
     cols_map[c_obj] = "Objeto del contrato"
@@ -442,8 +452,8 @@ elif c_exp and c_exp in vista.columns:
     tabla["Expediente"] = vista[c_exp].astype(str).apply(lambda x: DETALLE_PSCP.format(x))
 
 if vista.empty:
-    st.success("✅ No hay licitaciones en las categorías seleccionadas. "
-               "Marca también ⚪ DESCARTAR y 🔴 FUERA para ver todo lo cribado.")
+    st.success("No hay licitaciones en las categorías seleccionadas. "
+               "Marca también Descartar y Fuera para ver todo lo cribado.")
 else:
     st.dataframe(
         tabla, use_container_width=True, hide_index=True,
@@ -456,34 +466,32 @@ else:
     )
 
 st.download_button(
-    "⬇️ Descargar (CSV)",
+    "Descargar (CSV)",
     data=tabla.to_csv(index=False).encode("utf-8-sig"),
     file_name=f"radar_pasiona_{dt.date.today():%Y%m%d}.csv",
     mime="text/csv",
 )
 
-with st.expander("ℹ️ Qué hace y qué no hace esta demo"):
+with st.expander("Qué hace y qué no hace esta demo"):
     st.markdown(
         """
-        **Filtros Pasiona aplicados (definidos por Dirección y Talent):**
+        **Filtros Pasiona aplicados (Dirección y Talent):**
+        umbral económico definido por Ernest Pagès (mínimo 50.000 €, techo 300.000 € / SARA)
+        y capacidades reales definidas por Txema Salabert (Desarrollo con IA, Desarrollo .NET,
+        Servicios UX, Servicios Agile y Consultoría IA). El resto queda fuera de radar.
 
-        - **Umbral económico (Ernest Pagès):** por debajo de **50.000 €** no resulta rentable;
-          por encima de 300.000 € suele ir a grandes proveedores.
-        - **Capacidades reales (Txema Salabert):** solo pasan a 🟢/🟡 las licitaciones de las
-          **5 áreas** donde Pasiona tiene capacidad real (Desarrollo con IA, Desarrollo .NET,
-          Servicios UX, Servicios Agile y Consultoría IA). El resto queda 🔴 FUERA.
-
-        **Categorías:** 🟢 PRESENTAR · 🟡 DUDOSO · 🔵 TIC (bajo importe) · ⚪ DESCARTAR · 🔴 FUERA.
+        **Categorías:** Presentar · Dudoso · TIC (bajo importe) · Descartar · Fuera de radar.
 
         **Qué NO hace todavía (fase de producto):** leer el pliego completo (PCAP/PPT),
-        memoria de decisiones previas, cobertura del Estado (PLACSP) y valoración con IA de
-        cada caso frontera. La clasificación se basa en el objeto del contrato publicado.
+        memoria de decisiones previas, cobertura del Estado (PLACSP) y valoración con IA
+        de cada caso frontera. La clasificación se basa en el objeto del contrato publicado.
         """
     )
 
-# ── Pie con marca ────────────────────────────────────────────────────────────
 st.markdown(
-    f"""<div class="pie"><b>pasiona</b> · Radar de Licitaciones AAPP · Demo {dt.date.today():%Y} ·
-    Fuente oficial: Datos Abiertos Generalitat de Catalunya (PSCP)</div>""",
+    f"""<div class="pie">
+    <b>pasiona</b> &nbsp;·&nbsp; Radar de Licitaciones AAPP &nbsp;·&nbsp; Demo {dt.date.today():%Y}<br>
+    Fuente oficial: Datos Abiertos de la Generalitat de Catalunya (PSCP)
+    </div>""",
     unsafe_allow_html=True,
 )
