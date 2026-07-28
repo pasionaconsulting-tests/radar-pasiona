@@ -14,8 +14,8 @@ FILTROS PASIONA (definidos por Dirección y Talent):
        5. Consultoría IA
     Todo lo que quede fuera de estas capacidades → FUERA DE RADAR.
 
-Clasificación en 4 categorías CON MOTIVO:
-   🟢 PRESENTAR · 🟡 DUDOSO · ⚪ DESCARTAR · 🔴 FUERA DE RADAR
+Categorías CON MOTIVO:
+   🟢 PRESENTAR · 🟡 DUDOSO · 🔵 TIC (bajo importe) · ⚪ DESCARTAR · 🔴 FUERA
 
 Coste de infraestructura: 0 €
 Autora: Dori Portales · Pasiona Consulting · 2026
@@ -36,81 +36,100 @@ API_PSCP = "https://analisi.transparenciacatalunya.cat/resource/ybgg-dgi6.json"
 DETALLE_PSCP = "https://contractaciopublica.cat/ca/detall-publicacio/{}"
 
 # ── FILTROS PASIONA · Umbral económico (Ernest Pagès, 06/07/2026) ────────────
-IMPORTE_MIN = 50000       # < 50k € → FUERA (poco margen, mucho trabajo)
-IMPORTE_MAX = 300000      # > 300k € → DUDOSO (suelen estar preasignadas)
+IMPORTE_MIN = 50000       # < 50k € → no rentable (poco margen, mucho trabajo)
+IMPORTE_MAX = 300000      # > 300k € → suelen ir a grandes
 SARA_SERVICIOS = 221000   # umbral SARA de servicios
 
 # ── FILTROS PASIONA · Capacidades reales (Txema Salabert, 06/07/2026) ────────
-# LISTA BLANCA: palabras clave de las 5 áreas donde Pasiona SÍ tiene capacidad.
 LISTA_BLANCA = {
     "Desarrollo con IA": [
-        "intel·ligència artificial", "inteligencia artificial", " ia ", "ia)",
-        "machine learning", "aprenentatge automàtic", "llm", "gpt", "copilot",
-        "claude", "github", "generativa", "generatiu", "chatbot", "agents inteligentes",
-        "agents intel", "rag ",
+        "intel·ligència artificial", "inteligencia artificial",
+        "machine learning", "aprenentatge automàtic", "aprendizaje automático",
+        "model de llenguatge", "modelo de lenguaje", "llm",
+        "copilot", "github copilot", "anthropic", "openai", "chatgpt",
+        "ia generativa", "ia generatia", "intel·ligència generativa",
+        "generative ai", "chatbot conversacional", "agent conversacional",
+        "assistent virtual", "asistente virtual",
     ],
     "Desarrollo .NET": [
-        ".net", "dotnet", "c#", "asp.net", "blazor", "desenvolupament d'aplicacions",
-        "desarrollo de aplicaciones", "desenvolupament de programari",
-        "desarrollo de software", "aplicació web", "aplicación web",
-        "aplicacions a mida", "aplicaciones a medida", "desenvolupament web",
-        "desarrollo web", "api", "microserv",
+        ".net", "dotnet", " c# ", "asp.net", "blazor", "entity framework",
+        "desenvolupament d'aplicacions", "desarrollo de aplicaciones",
+        "desenvolupament de programari a mida", "desarrollo de software a medida",
+        "aplicació web a mida", "aplicación web a medida",
+        "aplicacions a mida", "aplicaciones a medida",
+        "desenvolupament a mida", "desarrollo a medida",
+        "desenvolupament de microserveis", "microservicios", "microserveis",
+        "desenvolupament d'api", "desarrollo de api",
     ],
     "Servicios UX": [
-        "ux", "ui", "experiència d'usuari", "experiencia de usuario",
-        "usabilitat", "usabilidad", "disseny centrat", "diseño centrado",
-        "accessibilitat", "accesibilidad", "prototip", "prototipo",
-        "disseny de servei", "diseño de servicio",
+        "experiència d'usuari", "experiencia de usuario", " ux ", " ux/ui", "ux/ui",
+        "usabilitat", "usabilidad", "disseny centrat en l'usuari",
+        "diseño centrado en el usuario", "disseny de serveis digitals",
+        "diseño de servicios digitales", "prototipatge", "prototipado",
+        "accessibilitat web", "accesibilidad web", "arquitectura de la informació",
     ],
     "Servicios Agile": [
-        "agile", "àgil", "ágil", "scrum", "kanban", "safe", "less",
-        "transformació àgil", "transformación ágil", "coaching", "facilitació",
-        "metodologia àgil", "metodología ágil",
+        " agile", "àgil", "ágil", "scrum", "kanban", " safe ", "less framework",
+        "transformació àgil", "transformación ágil", "coaching àgil", "coaching ágil",
+        "facilitació àgil", "metodologia àgil", "metodología ágil",
+        "gestió àgil de projectes", "gestión ágil de proyectos",
     ],
     "Consultoría IA": [
-        "consultoria", "consultoría", "assessorament", "asesoramiento",
-        "estratègia digital", "estrategia digital", "transformació digital",
-        "transformación digital", "adopció", "adopción", "governança",
-        "gobernanza", "maduresa", "madurez", "roadmap", "diagnòstic", "diagnóstico",
+        "consultoria en intel·ligència", "consultoría en inteligencia",
+        "estratègia d'intel·ligència artificial", "estrategia de inteligencia artificial",
+        "adopció d'ia", "adopción de ia", "governança de dades", "gobernanza de datos",
+        "maduresa digital", "madurez digital", "estratègia de dades",
+        "estrategia de datos", "roadmap d'ia", "diagnòstic d'ia", "diagnóstico de ia",
     ],
 }
 
-# ── Tecnologías / ámbitos DESCARTADOS por Dirección (→ FUERA) ─────────────────
+# ── Ámbitos DESCARTADOS por Dirección (→ FUERA) ──────────────────────────────
 DESCARTADAS = {
-    "Oracle": ["oracle", "rac", "data guard"],
-    "Java/Spring": ["java", "spring", "j2ee", "jakarta"],
-    "SAP": ["sap", "s/4hana", "abap"],
-    "Cloud/Infra con partnership": ["azure", "aws", "cloud microsoft", "office 365",
-                                     "microsoft 365", "m365", "vmware", "citrix"],
-    "Producto cerrado sin partnership": ["dspace", "trustedx", "jira", "atlassian",
-                                         "confluence", "sharepoint", "liferay",
-                                         "drupal", "wordpress", "sitecore"],
+    "Oracle": ["oracle", "data guard", "exadata"],
+    "Java/Spring": [" java", "spring boot", "j2ee", "jakarta ee"],
+    "SAP": [" sap ", "s/4hana", " abap"],
+    "Cloud/Infra con partnership": ["migració a azure", "migración a azure",
+                                    "entorn azure", "entorno azure", "amazon web services",
+                                    "vmware", "citrix", "nutanix"],
+    "Producto cerrado / licencias": ["dspace", "trustedx", " jira", "atlassian",
+                                     "confluence", "burp suite", "liferay", "sitecore",
+                                     "veeam", "fortinet", "palo alto"],
     "Microinformática/Helpdesk": ["microinformàtica", "microinformatica", "helpdesk",
-                                   "help desk", "cau ", "suport a usuari", "soporte a usuario",
-                                   "parc informàtic", "parque informático", "puestos de trabajo"],
-    "Infraestructura/Redes/Seguridad ops": ["xarxa", "red de comunicaciones", "cablejat",
-                                            "cableado", "electrònica de xarxa", "firewall",
-                                            "servidors", "servidores", "datacenter",
-                                            "cpd", "backup", "còpies de seguretat"],
-    "ERP/Business Central/Dynamics": ["business central", "dynamics", "navision", "erp",
-                                      "sage", "a3"],
+                                  "help desk", "suport a usuari", "soporte a usuario",
+                                  "parc informàtic", "parque informático",
+                                  "llocs de treball", "puestos de trabajo",
+                                  "equips informàtics", "equipos informáticos"],
+    "Infraestructura/Redes/Seguridad ops": ["cablejat", "cableado", "electrònica de xarxa",
+                                            "firewall", "servidors físics", "servidores físicos",
+                                            "datacenter", "centre de dades", " cpd ",
+                                            "còpies de seguretat", "copias de seguridad",
+                                            "sistema de videovigilància"],
+    "ERP/Business Central/Dynamics": ["business central", "dynamics", "navision",
+                                      " erp ", " sage ", "programari de gestió comptable",
+                                      "software de gestión contable"],
 }
 
 # ── Patrones NO-TIC (→ FUERA por sector) ─────────────────────────────────────
 NO_TIC = {
     "Obra civil / arquitectura": ["obra", "obres", "edifici", "edificio", "construcció",
                                   "construcción", "arquitect", "enginyeria civil",
-                                  "ingeniería civil", "urbanització", "pont", "puente",
+                                  "ingeniería civil", "urbanitzaci", "pont ", "puente",
                                   "carretera", "paviment", "estació regeneradora",
-                                  "estación regeneradora", "clavegueram", "sanejament"],
-    "Suministro / material": ["subministrament", "suministro", "adquisició", "adquisición",
-                              "compra de", "mobiliari", "mobiliario", "vehicle", "vehículo"],
-    "Servicios no técnicos": ["neteja", "limpieza", "vigilància", "vigilancia", "seguretat privada",
-                             "seguridad privada", "catering", "restauració", "jardineria",
-                             "jardinería", "transport", "transporte", "assegurança", "seguro",
-                             "mostreig", "muestreo", "anàlisi de laboratori", "laboratorio",
-                             "formació no", "protecció de dades", "protección de datos",
-                             "delegat de protecció", "delegado de protección"],
+                                  "estación regeneradora", "clavegueram", "sanejament",
+                                  "reparació, conservació", "conservació i manteniment d'element"],
+    "Suministro / material": ["subministrament", "suministro", "adquisició de",
+                              "adquisición de", "compra de", "mobiliari", "mobiliario",
+                              "vehicle", "vehículo", "combustible", "material d'oficina",
+                              "adquisició de la pintura", "obra d'art"],
+    "Servicios no técnicos": ["neteja", "limpieza", "vigilància", "vigilancia",
+                             "seguretat privada", "seguridad privada", "catering",
+                             "restauració", "jardineria", "jardinería", "transport de",
+                             "transporte de", "assegurança", "seguro de", "mostreig",
+                             "muestreo", "anàlisi de laboratori", "laboratori",
+                             "protecció de dades", "protección de datos",
+                             "delegat de protecció", "delegado de protección",
+                             "manteniment dels pianos", "piano", "actuacions forestals",
+                             "forestal", "dinamització comunitària", "casal de barri"],
 }
 
 
@@ -132,24 +151,19 @@ CAMPOS_FECHA = ["data_publicacio_anunci", "data_publicacio"]
 CAMPOS_PLAZO = ["termini_presentacio_ofertes", "data_fi_presentacio_ofertes"]
 CAMPOS_URL = ["enllac_publicacio", "enllac", "url_publicacio"]
 CAMPOS_EXP = ["codi_expedient", "expedient"]
-CAMPOS_CPV = ["codi_cpv", "cpv"]
 CAMPO_TIPUS = "tipus_contracte"
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def cargar(limite: int) -> pd.DataFrame:
-    """
-    Descarga robusta desde la fuente oficial (PSCP Catalunya).
-    Prueba varias estrategias de consulta y se queda con la primera que
-    devuelva registros, para no quedarse nunca en blanco.
-    """
-    headers = {"User-Agent": "RadarPasiona/2.1"}
+    """Descarga robusta con varios intentos para no quedarse en blanco."""
+    headers = {"User-Agent": "RadarPasiona/2.2"}
     intentos = [
-        {"$limit": limite, "$order": ":id DESC"},                       # 1) últimas publicaciones
-        {"$limit": limite},                                              # 2) sin orden (más permisiva)
-        {"$limit": limite, "$order": "data_publicacio_anunci DESC"},     # 3) por fecha de anuncio
+        {"$limit": limite, "$order": ":id DESC"},
+        {"$limit": limite},
+        {"$limit": limite, "$order": "data_publicacio_anunci DESC"},
     ]
-    ultimo_error = None
+    ultimo = None
     for params in intentos:
         try:
             r = requests.get(API_PSCP, params=params, timeout=45, headers=headers)
@@ -158,10 +172,10 @@ def cargar(limite: int) -> pd.DataFrame:
             if datos:
                 return pd.DataFrame(datos)
         except Exception as e:  # noqa: BLE001
-            ultimo_error = e
+            ultimo = e
             continue
-    if ultimo_error:
-        raise ultimo_error
+    if ultimo:
+        raise ultimo
     return pd.DataFrame()
 
 
@@ -173,7 +187,6 @@ def num(v) -> float:
 
 
 def detecta(texto: str, grupos: dict):
-    """Devuelve (nombre_grupo, palabra) del primer grupo que aparezca en el texto."""
     t = f" {texto.lower()} "
     for nombre, palabras in grupos.items():
         for p in palabras:
@@ -185,49 +198,59 @@ def detecta(texto: str, grupos: dict):
 def clasificar(fila: dict, c_obj: str, c_imp: str) -> tuple[str, str, str]:
     """
     Aplica los FILTROS PASIONA.
-    Devuelve: (categoría, área/motivo-capacidad, motivo-detallado)
+    Categorías: 🟢 PRESENTAR · 🟡 DUDOSO · 🔵 TIC (bajo importe) · ⚪ DESCARTAR · 🔴 FUERA
+    Devuelve (categoría, capacidad/área, motivo).
     """
     objeto = str(fila.get(c_obj, "") or "")
     importe = num(fila.get(c_imp, 0))
 
-    # 1) ¿Es de un ámbito NO-TIC? → FUERA por sector
+    # 1) NO-TIC por sector → FUERA
     sector, _ = detecta(objeto, NO_TIC)
     if sector:
         return "🔴 FUERA", "—", f"No-TIC · {sector}"
 
-    # 2) ¿Tecnología descartada por Dirección? → FUERA por capacidad
-    desc, palabra = detecta(objeto, DESCARTADAS)
+    # 2) Tecnología descartada por Dirección → FUERA
+    desc, _ = detecta(objeto, DESCARTADAS)
     if desc:
         return "🔴 FUERA", "—", f"Fuera de capacidades Pasiona · {desc}"
 
-    # 3) ¿Encaja en la LISTA BLANCA de capacidades? (Filtro Pasiona · Txema)
+    # 3) ¿Encaja en la LISTA BLANCA? (capacidad Pasiona)
     area, _ = detecta(objeto, LISTA_BLANCA)
 
-    # 4) Filtro económico (Filtro Pasiona · Ernest)
-    if importe and importe < IMPORTE_MIN:
-        motivo = f"Importe {importe:,.0f}€ < mínimo 50.000€ (poco margen)".replace(",", ".")
-        return "⚪ DESCARTAR", (area or "—"), motivo
-    if importe > IMPORTE_MAX:
-        motivo = f"Importe {importe:,.0f}€ > 300.000€ (suelen ir a grandes)".replace(",", ".")
-        cat = "🟡 DUDOSO" if area else "🔴 FUERA"
-        return cat, (area or "—"), motivo
-
-    # 5) Decisión según capacidad + economía
     if area:
         if importe == 0:
             return "🟡 DUDOSO", area, f"Encaja en {area}, pero sin importe publicado (verificar)"
-        franja = "A" if importe < 80000 else ("B" if importe < 150000 else "C")
+        if importe < IMPORTE_MIN:
+            return "🔵 TIC (bajo importe)", area, \
+                f"{area} · importe {importe:,.0f}€ < mínimo 50.000€".replace(",", ".")
+        if importe > IMPORTE_MAX:
+            return "🟡 DUDOSO", area, \
+                f"{area} · importe {importe:,.0f}€ supera 300.000€ (suele ir a grandes)".replace(",", ".")
         if importe >= SARA_SERVICIOS:
-            return "🟡 DUDOSO", area, f"Encaja en {area} · zona SARA ({importe:,.0f}€): verificar".replace(",", ".")
-        return "🟢 PRESENTAR", area, f"Capacidad Pasiona: {area} · franja {franja} ({importe:,.0f}€)".replace(",", ".")
+            return "🟡 DUDOSO", area, \
+                f"{area} · zona SARA ({importe:,.0f}€): verificar PCAP".replace(",", ".")
+        franja = "A" if importe < 80000 else ("B" if importe < 150000 else "C")
+        return "🟢 PRESENTAR", area, \
+            f"Capacidad Pasiona: {area} · franja {franja} ({importe:,.0f}€)".replace(",", ".")
 
-    # 6) No encaja en ninguna capacidad Pasiona
+    # 4) No encaja en ninguna capacidad Pasiona
     return "🔴 FUERA", "—", "No encaja en las 5 capacidades Pasiona (lista blanca)"
 
 
 def fmt_eur(v) -> str:
     n = num(v)
     return f"{n:,.0f} €".replace(",", ".") if n else "—"
+
+
+def fmt_fecha(v) -> str:
+    """Convierte 2026-09-21T14:00:00.000 en 21/09/2026."""
+    s = str(v or "")
+    if len(s) >= 10 and s[4] == "-":
+        try:
+            return f"{s[8:10]}/{s[5:7]}/{s[0:4]}"
+        except Exception:  # noqa: BLE001
+            return s
+    return s if s else "—"
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -255,8 +278,8 @@ with st.sidebar:
     palabra = st.text_input("Buscar en el objeto del contrato", "")
     cats_sel = st.multiselect(
         "Mostrar categorías",
-        ["🟢 PRESENTAR", "🟡 DUDOSO", "⚪ DESCARTAR", "🔴 FUERA"],
-        default=["🟢 PRESENTAR", "🟡 DUDOSO"],
+        ["🟢 PRESENTAR", "🟡 DUDOSO", "🔵 TIC (bajo importe)", "⚪ DESCARTAR", "🔴 FUERA"],
+        default=["🟢 PRESENTAR", "🟡 DUDOSO", "🔵 TIC (bajo importe)"],
     )
     st.divider()
     st.markdown(
@@ -289,32 +312,32 @@ muestra = df.iloc[0].to_dict()
 c_imp = primer_campo(muestra, CAMPOS_IMPORTE)
 c_obj = primer_campo(muestra, CAMPOS_OBJETO)
 c_org = primer_campo(muestra, CAMPOS_ORGANO)
-c_fec = primer_campo(muestra, CAMPOS_FECHA)
 c_pla = primer_campo(muestra, CAMPOS_PLAZO)
 c_url = primer_campo(muestra, CAMPOS_URL)
 c_exp = primer_campo(muestra, CAMPOS_EXP)
-c_cpv = primer_campo(muestra, CAMPOS_CPV)
 
 res = df.apply(lambda f: clasificar(f, c_obj, c_imp), axis=1, result_type="expand")
 df["Categoría"] = res[0]
 df["Capacidad"] = res[1]
 df["Motivo"] = res[2]
 
-# ── Métricas ─────────────────────────────────────────────────────────────────
-c1, c2, c3, c4, c5 = st.columns(5)
+# ── Métricas (6 columnas: total + 5 categorías) ──────────────────────────────
+cols = st.columns(6)
 tot = len(df)
-for col, etiqueta, cat, color in [
-    (c1, "Publicaciones", None, "#252525"),
-    (c2, "🟢 Presentar", "🟢 PRESENTAR", "#28a745"),
-    (c3, "🟡 Dudoso", "🟡 DUDOSO", "#f0a500"),
-    (c4, "⚪ Descartar", "⚪ DESCARTAR", "#8a8d91"),
-    (c5, "🔴 Fuera", "🔴 FUERA", "#dc3545"),
-]:
+metricas = [
+    ("Publicaciones", None, "#252525"),
+    ("🟢 Presentar", "🟢 PRESENTAR", "#28a745"),
+    ("🟡 Dudoso", "🟡 DUDOSO", "#f0a500"),
+    ("🔵 TIC baja", "🔵 TIC (bajo importe)", "#2b7de9"),
+    ("⚪ Descartar", "⚪ DESCARTAR", "#8a8d91"),
+    ("🔴 Fuera", "🔴 FUERA", "#dc3545"),
+]
+for col, (etq, cat, color) in zip(cols, metricas):
     valor = tot if cat is None else int((df["Categoría"] == cat).sum())
     col.markdown(
-        f"""<div style="background:{color};padding:16px;border-radius:10px;text-align:center;">
-        <div style="color:white;font-size:28px;font-weight:800;">{valor}</div>
-        <div style="color:white;font-size:12px;">{etiqueta}</div></div>""",
+        f"""<div style="background:{color};padding:14px;border-radius:10px;text-align:center;">
+        <div style="color:white;font-size:26px;font-weight:800;">{valor}</div>
+        <div style="color:white;font-size:11px;">{etq}</div></div>""",
         unsafe_allow_html=True,
     )
 
@@ -323,35 +346,56 @@ st.caption(
     "clasificación según Filtros Pasiona (Ernest + Txema)"
 )
 
+# ── Aviso contextual si no hay verdes ────────────────────────────────────────
+n_verde = int((df["Categoría"] == "🟢 PRESENTAR").sum())
+n_tic = int((df["Categoría"] == "🔵 TIC (bajo importe)").sum())
+if n_verde == 0:
+    st.info(
+        f"ℹ️ Hoy no hay licitaciones **🟢 PRESENTAR** en Catalunya que cumplan capacidad Pasiona "
+        f"**y** importe ≥ 50.000 €. Sí se han detectado **{n_tic}** licitaciones TIC de nuestras "
+        f"áreas pero por debajo del mínimo económico (categoría 🔵), que quedan fuera por la "
+        f"decisión de umbral de Dirección. El radar ha cribado {tot} publicaciones en segundos."
+    )
+
 # ── Filtros de vista ─────────────────────────────────────────────────────────
 vista = df[df["Categoría"].isin(cats_sel)].copy()
 if palabra and c_obj:
     vista = vista[vista[c_obj].astype(str).str.contains(palabra, case=False, na=False)]
 
 # ── Tabla ────────────────────────────────────────────────────────────────────
-cols = {"Categoría": "Categoría", "Capacidad": "Capacidad Pasiona", "Motivo": "Motivo"}
+cols_map = {"Categoría": "Categoría", "Capacidad": "Capacidad Pasiona", "Motivo": "Motivo"}
 if c_obj:
-    cols[c_obj] = "Objeto del contrato"
+    cols_map[c_obj] = "Objeto del contrato"
 if c_org:
-    cols[c_org] = "Organismo"
+    cols_map[c_org] = "Organismo"
 if c_imp:
-    cols[c_imp] = "Importe (sin IVA)"
+    cols_map[c_imp] = "Importe (sin IVA)"
 if c_pla:
-    cols[c_pla] = "Plazo"
+    cols_map[c_pla] = "Plazo"
 
-tabla = vista[list(cols.keys())].rename(columns=cols)
+tabla = vista[list(cols_map.keys())].rename(columns=cols_map)
 if "Importe (sin IVA)" in tabla.columns:
     tabla["Importe (sin IVA)"] = tabla["Importe (sin IVA)"].apply(fmt_eur)
+if "Plazo" in tabla.columns:
+    tabla["Plazo"] = tabla["Plazo"].apply(fmt_fecha)
 
 if c_url and c_url in vista.columns:
     tabla["Expediente"] = vista[c_url].astype(str)
 elif c_exp and c_exp in vista.columns:
     tabla["Expediente"] = vista[c_exp].astype(str).apply(lambda x: DETALLE_PSCP.format(x))
 
-st.dataframe(
-    tabla, use_container_width=True, hide_index=True,
-    column_config={"Expediente": st.column_config.LinkColumn("Expediente", display_text="Abrir ↗")},
-)
+if vista.empty:
+    st.success("✅ No hay licitaciones en las categorías seleccionadas con los filtros actuales. "
+               "Prueba a marcar también ⚪ DESCARTAR y 🔴 FUERA para ver todo lo cribado.")
+else:
+    st.dataframe(
+        tabla, use_container_width=True, hide_index=True,
+        column_config={
+            "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato", width="large"),
+            "Motivo": st.column_config.TextColumn("Motivo", width="medium"),
+            "Expediente": st.column_config.LinkColumn("Expediente", display_text="Abrir ↗"),
+        },
+    )
 
 st.download_button(
     "⬇️ Descargar (CSV)",
@@ -366,25 +410,28 @@ with st.expander("ℹ️ Qué hace y qué no hace esta demo"):
         """
         **Filtros Pasiona aplicados (definidos por Dirección y Talent):**
 
-        - **Umbral económico (Ernest Pagès):** se descartan las licitaciones por debajo de
-          **50.000 €** (poco margen, mucho trabajo) y se marcan como dudosas las que superan
-          los 300.000 € (suelen ir a grandes proveedores).
-        - **Capacidades reales (Txema Salabert):** solo pasan a PRESENTAR/DUDOSO las
-          licitaciones de las **5 áreas** donde Pasiona tiene capacidad real —
-          Desarrollo con IA, Desarrollo .NET, Servicios UX, Servicios Agile y Consultoría IA.
-          Todo lo demás queda **FUERA**, con su motivo.
+        - **Umbral económico (Ernest Pagès):** por debajo de **50.000 €** no resulta rentable
+          (poco margen, mucho trabajo); por encima de 300.000 € suele ir a grandes proveedores.
+        - **Capacidades reales (Txema Salabert):** solo pasan a 🟢/🟡 las licitaciones de las
+          **5 áreas** donde Pasiona tiene capacidad real (Desarrollo con IA, Desarrollo .NET,
+          Servicios UX, Servicios Agile y Consultoría IA). El resto queda 🔴 FUERA.
 
-        **Categorías:** 🟢 PRESENTAR · 🟡 DUDOSO · ⚪ DESCARTAR · 🔴 FUERA — cada una con
-        el motivo por el que se ha clasificado así.
+        **Las 5 categorías:**
+        - 🟢 **PRESENTAR** — encaja en capacidad e importe.
+        - 🟡 **DUDOSO** — encaja, pero hay que verificar (importe alto/SARA o sin importe).
+        - 🔵 **TIC (bajo importe)** — es de nuestras áreas, pero por debajo de 50.000 €.
+          _Se muestra aparte para que se vea que sí hay tecnología, aunque no llegue al mínimo._
+        - ⚪ **DESCARTAR** — cae por importe u otro filtro.
+        - 🔴 **FUERA** — no-TIC o tecnología fuera de las capacidades Pasiona.
 
         **Qué NO hace todavía (fase de producto):**
         - Leer el pliego completo (PCAP/PPT) para el matiz fino (perfiles vs proyecto,
-          bolsa de horas, solvencia, partnerships exigidos).
+          bolsa de horas, solvencia, partnerships).
         - Memoria de decisiones previas de Dirección.
         - Cobertura del Estado (PLACSP) y otras fuentes.
         - Valoración con IA de cada caso frontera.
 
-        La clasificación se basa en el **objeto del contrato** publicado por la fuente
-        oficial. Los casos límite conviene revisarlos con criterio experto.
+        La clasificación se basa en el **objeto del contrato** publicado por la fuente oficial;
+        los casos límite conviene revisarlos con criterio experto.
         """
     )
