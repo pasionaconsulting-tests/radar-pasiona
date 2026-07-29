@@ -44,8 +44,9 @@ _CSS = (
 st.markdown(_CSS, unsafe_allow_html=True)
 
 API_PSCP = "https://analisi.transparenciacatalunya.cat/resource/ybgg-dgi6.json"
-# Buscador oficial de la PSCP por código de expediente (funciona con codi_expedient)
-BUSCADOR_PSCP = "https://contractaciopublica.gencat.cat/ecofin_pscp/AppJava/search.pscp?reqCode=viewSearch&text={}"
+# Buscador oficial de la PSCP (Catalunya). Se abre para localizar por código.
+BUSCADOR_PSCP = "https://contractaciopublica.cat/ca/cercador/?text={}"
+BUSCADOR_HOME = "https://contractaciopublica.cat/ca/inici"
 
 IMPORTE_MIN = 50000
 IMPORTE_MAX = 300000
@@ -378,24 +379,27 @@ if c_imp:
     tabla["Importe (sin IVA)"] = vista[c_imp].apply(fmt_eur)
 if c_pla:
     tabla["Plazo"] = vista[c_pla].apply(fmt_fecha)
-# Enlace al expediente:
-#  1) si la API trae una URL real (http) se usa directamente
-#  2) si no, se construye el enlace al BUSCADOR OFICIAL de la PSCP por código
-#     de expediente (siempre lleva a la ficha real, sin inventar rutas)
+# Código de expediente (visible) + columna Buscar (enlace al buscador oficial):
+#  - Si la API trae URL directa del anuncio, se usa esa.
+#  - Si no, se enlaza al buscador oficial con el código ya escrito, y además
+#    se muestra el código en una columna para localizarlo a mano si hiciera falta.
+if c_exp:
+    tabla["Expediente"] = vista[c_exp].astype(str).replace(
+        {"nan": "—", "None": "—", "": "—"})
+
+
 def construir_enlace(fila):
     if c_url:
         u = url_valida(fila.get(c_url, ""))
         if u:
             return u
-    if c_exp:
-        cod = str(fila.get(c_exp, "") or "").strip()
-        if cod:
-            return BUSCADOR_PSCP.format(requests.utils.quote(cod))
-    return ""
+    cod = str(fila.get(c_exp, "") or "").strip() if c_exp else ""
+    if cod and cod.lower() not in ("nan", "none"):
+        return BUSCADOR_PSCP.format(requests.utils.quote(cod))
+    return BUSCADOR_HOME
 
-enlaces = vista.apply(construir_enlace, axis=1)
-if enlaces.str.len().gt(0).any():
-    tabla["Expediente"] = enlaces
+
+tabla["Buscar"] = vista.apply(construir_enlace, axis=1)
 
 if vista.empty:
     st.success("No hay licitaciones en las categorías seleccionadas. "
@@ -408,9 +412,9 @@ else:
         "Organismo": st.column_config.TextColumn("Organismo"),
         "Importe (sin IVA)": st.column_config.TextColumn("Importe"),
         "Plazo": st.column_config.TextColumn("Plazo"),
+        "Expediente": st.column_config.TextColumn("Código expediente"),
+        "Buscar": st.column_config.LinkColumn("Buscar", display_text="Buscar ↗"),
     }
-    if "Expediente" in tabla.columns:
-        colcfg["Expediente"] = st.column_config.LinkColumn("Expediente", display_text="Abrir ↗")
     st.dataframe(tabla, use_container_width=True, hide_index=True,
                  column_config=colcfg, height=460)
 
