@@ -3,7 +3,7 @@
 RADAR DE LICITACIONES AAPP - PASIONA
 Demo conectada EN VIVO a la fuente oficial de contratacion publica de Catalunya.
 FILTROS PASIONA: umbral economico (Ernest) + capacidades (Txema).
-Diseno sobrio corporativo. Coste 0 EUR. Autora: Dori Portales - 2026.
+Coste 0 EUR. Autora: Dori Portales - 2026.
 """
 
 import base64
@@ -44,9 +44,8 @@ _CSS = (
 st.markdown(_CSS, unsafe_allow_html=True)
 
 API_PSCP = "https://analisi.transparenciacatalunya.cat/resource/ybgg-dgi6.json"
-# Buscador oficial de la PSCP (Catalunya). Se abre para localizar por código.
+# Buscador oficial de la PSCP (Catalunya) para localizar por código de expediente
 BUSCADOR_PSCP = "https://contractaciopublica.cat/ca/cercador/?text={}"
-BUSCADOR_HOME = "https://contractaciopublica.cat/ca/inici"
 
 IMPORTE_MIN = 50000
 IMPORTE_MAX = 300000
@@ -166,7 +165,6 @@ CAMPOS_IMPORTE = ["pressupost_licitacio_sense", "pressupost_base_licitacio_sense
 CAMPOS_OBJETO = ["objecte_contracte", "denominacio", "objecte"]
 CAMPOS_ORGANO = ["nom_organ", "nom_departament_ens", "nom_ambit"]
 CAMPOS_PLAZO = ["termini_presentacio_ofertes", "data_fi_presentacio_ofertes"]
-# Campos que pueden contener la URL REAL del anuncio (según dataset PSCP)
 CAMPOS_URL = ["enllac_publicacio", "enllac_stcp", "enllac", "url_publicacio",
               "url", "enllac_web", "enllac_perfil"]
 CAMPOS_EXP = ["codi_expedient", "expedient", "codi_expedient_contractacio"]
@@ -183,7 +181,7 @@ def logo_b64():
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def cargar(limite):
-    headers = {"User-Agent": "RadarPasiona/3.4"}
+    headers = {"User-Agent": "RadarPasiona/3.5"}
     intentos = [
         {"$limit": limite, "$order": ":id DESC"},
         {"$limit": limite},
@@ -270,11 +268,8 @@ def fmt_fecha(v):
 
 
 def url_valida(v):
-    """Devuelve la URL solo si es un enlace http real; si no, cadena vacía."""
     s = str(v or "").strip()
-    if s.lower().startswith("http"):
-        return s
-    return ""
+    return s if s.lower().startswith("http") else ""
 
 
 _logo = logo_b64()
@@ -367,7 +362,7 @@ vista = df[df["Categoría"].isin(cats_sel)].copy()
 if palabra and c_obj:
     vista = vista[vista[c_obj].astype(str).str.contains(palabra, case=False, na=False)]
 
-# Construcción de la tabla (SIN columna Área para dar más espacio al Objeto)
+# ── Construcción de la tabla ─────────────────────────────────────────────────
 tabla = pd.DataFrame()
 tabla["Categoría"] = vista["Categoría"]
 if c_obj:
@@ -376,16 +371,14 @@ tabla["Motivo"] = vista["Motivo"]
 if c_org:
     tabla["Organismo"] = vista[c_org].astype(str)
 if c_imp:
-    tabla["Importe (sin IVA)"] = vista[c_imp].apply(fmt_eur)
+    tabla["Importe"] = vista[c_imp].apply(fmt_eur)
 if c_pla:
     tabla["Plazo"] = vista[c_pla].apply(fmt_fecha)
-# Código de expediente (visible) + columna Buscar (enlace al buscador oficial):
-#  - Si la API trae URL directa del anuncio, se usa esa.
-#  - Si no, se enlaza al buscador oficial con el código ya escrito, y además
-#    se muestra el código en una columna para localizarlo a mano si hiciera falta.
+
+# Código de expediente (visible) + columna Buscar (enlace al buscador oficial)
 if c_exp:
-    tabla["Expediente"] = vista[c_exp].astype(str).replace(
-        {"nan": "—", "None": "—", "": "—"})
+    codigos = vista[c_exp].astype(str).replace({"nan": "—", "None": "—", "": "—"})
+    tabla["Código expediente"] = codigos
 
 
 def construir_enlace(fila):
@@ -396,7 +389,7 @@ def construir_enlace(fila):
     cod = str(fila.get(c_exp, "") or "").strip() if c_exp else ""
     if cod and cod.lower() not in ("nan", "none"):
         return BUSCADOR_PSCP.format(requests.utils.quote(cod))
-    return BUSCADOR_HOME
+    return BUSCADOR_PSCP.format("")
 
 
 tabla["Buscar"] = vista.apply(construir_enlace, axis=1)
@@ -410,9 +403,9 @@ else:
         "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato"),
         "Motivo": st.column_config.TextColumn("Motivo"),
         "Organismo": st.column_config.TextColumn("Organismo"),
-        "Importe (sin IVA)": st.column_config.TextColumn("Importe"),
+        "Importe": st.column_config.TextColumn("Importe"),
         "Plazo": st.column_config.TextColumn("Plazo"),
-        "Expediente": st.column_config.TextColumn("Código expediente"),
+        "Código expediente": st.column_config.TextColumn("Código expediente"),
         "Buscar": st.column_config.LinkColumn("Buscar", display_text="Buscar ↗"),
     }
     st.dataframe(tabla, use_container_width=True, hide_index=True,
@@ -432,10 +425,11 @@ with st.expander("Qué hace y qué no hace esta demo"):
         "por Txema Salabert (Desarrollo con IA, Desarrollo .NET, Servicios UX, Servicios Agile "
         "y Consultoría IA). El resto queda fuera de radar.\n\n"
         "**Categorías:** Presentar · Dudoso · TIC (bajo importe) · Descartar · Fuera de radar.\n\n"
+        "**Localización:** se muestra el código de expediente y un botón 'Buscar ↗' que abre el "
+        "buscador oficial de la Plataforma de Contractació Pública para consultar la ficha completa.\n\n"
         "**Qué NO hace todavía (fase de producto):** leer el pliego completo (PCAP/PPT), "
         "memoria de decisiones previas, cobertura del Estado (PLACSP) y valoración con IA "
-        "de cada caso frontera. La clasificación se basa en el objeto del contrato publicado. "
-        "El enlace al expediente se muestra únicamente cuando la fuente oficial lo proporciona."
+        "de cada caso frontera. La clasificación se basa en el objeto del contrato publicado."
     )
 
 st.markdown(
