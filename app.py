@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 RADAR DE LICITACIONES AAPP - PASIONA
-Demo conectada EN VIVO a la fuente oficial de contratacion publica de Catalunya.
-FILTROS PASIONA: umbral economico (Ernest) + capacidades (Txema).
+App con 4 pestañas:
+  1. Radar (funcional, en vivo, fuente oficial PSCP Catalunya)
+  2. Analista de pliegos (interfaz lista · requiere conexión API IA · fase 2)
+  3. Redacción asistida (interfaz lista · requiere conexión API IA · fase 2)
+  4. Avisos por email (explicación · se activa con automatización externa)
+FILTROS PASIONA: umbral económico (Ernest) + capacidades (Txema).
 Coste 0 EUR. Autora: Dori Portales - 2026.
 """
 
@@ -26,7 +30,7 @@ _CSS = (
     "html,body,[class*='css'],.stMarkdown,.stDataFrame{font-family:'Open Sans',sans-serif;color:#252525;}"
     ".block-container{padding-top:2rem;max-width:1600px;}"
     "#MainMenu,footer{visibility:hidden;}"
-    ".cab{display:flex;align-items:center;gap:22px;padding:6px 4px 18px 4px;border-bottom:3px solid #EA7600;margin-bottom:24px;}"
+    ".cab{display:flex;align-items:center;gap:22px;padding:6px 4px 18px 4px;border-bottom:3px solid #EA7600;margin-bottom:20px;}"
     ".cab-logo{height:40px;width:auto;}"
     ".cab-sep{width:1px;height:42px;background:#E6E6E8;}"
     ".cab-tit{font-size:22px;font-weight:700;color:#252525;line-height:1.15;}"
@@ -34,18 +38,21 @@ _CSS = (
     ".cap{color:#97999B;font-size:12px;margin:2px 2px 18px 2px;}"
     ".pie{margin-top:40px;padding-top:18px;border-top:1px solid #E6E6E8;color:#97999B;font-size:11.5px;text-align:center;line-height:1.7;}"
     ".pie b{color:#EA7600;font-weight:700;}"
+    ".fase2{background:#FFF6ED;border:1px solid #F3C892;border-left:4px solid #EA7600;border-radius:10px;padding:16px 20px;margin:10px 0 18px 0;}"
+    ".fase2 b{color:#EA7600;}"
+    ".ej{background:#F7F7F8;border:1px solid #E6E6E8;border-radius:10px;padding:16px 20px;margin-top:12px;}"
     "div[data-testid='stAlert']{border-radius:10px;}"
     "section[data-testid='stSidebar']{background:#F4F4F5;}"
     "div[data-testid='stMetric']{background:#fff;border:1px solid #E6E6E8;border-radius:10px;padding:14px 16px;}"
     "div[data-testid='stMetricValue']{font-size:28px;font-weight:700;color:#252525;}"
     "div[data-testid='stMetricLabel'] p{font-size:11.5px;color:#515151;font-weight:600;}"
+    ".stTabs [data-baseweb='tab-list']{gap:6px;}"
+    ".stTabs [data-baseweb='tab']{font-weight:600;}"
     "</style>"
 )
 st.markdown(_CSS, unsafe_allow_html=True)
 
 API_PSCP = "https://analisi.transparenciacatalunya.cat/resource/ybgg-dgi6.json"
-# Buscador oficial de la PSCP (Catalunya). Abre la página del buscador (que
-# funciona); el código de expediente se muestra en la tabla para pegarlo allí.
 BUSCADOR_PSCP = "https://contractaciopublica.cat/ca/inici"
 
 IMPORTE_MIN = 50000
@@ -182,7 +189,7 @@ def logo_b64():
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def cargar(limite):
-    headers = {"User-Agent": "RadarPasiona/3.5"}
+    headers = {"User-Agent": "RadarPasiona/4.0"}
     intentos = [
         {"$limit": limite, "$order": ":id DESC"},
         {"$limit": limite},
@@ -273,6 +280,7 @@ def url_valida(v):
     return s if s.lower().startswith("http") else ""
 
 
+# ── CABECERA ─────────────────────────────────────────────────────────────────
 _logo = logo_b64()
 if _logo:
     _logo_html = f'<img src="data:image/png;base64,{_logo}" class="cab-logo">'
@@ -287,147 +295,252 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-with st.sidebar:
-    st.header("Parámetros del barrido")
-    n_reg = st.slider("Publicaciones a analizar", 100, 1000, 400, step=100)
-    st.divider()
-    st.subheader("Filtros de vista")
-    palabra = st.text_input("Buscar en el objeto del contrato", "")
-    cats_sel = st.multiselect(
-        "Mostrar categorías",
-        ["🟢 PRESENTAR", "🟡 DUDOSO", "🔵 TIC (bajo importe)", "⚪ DESCARTAR", "🔴 FUERA"],
-        default=["🟢 PRESENTAR", "🟡 DUDOSO", "🔵 TIC (bajo importe)"],
-    )
-    st.divider()
-    st.markdown(f"<b style='color:{NARANJA}'>Filtros Pasiona aplicados</b>", unsafe_allow_html=True)
+tab1, tab2, tab3, tab4 = st.tabs([
+    "🛰️  Radar de licitaciones",
+    "📊  Analista de pliegos",
+    "📝  Redacción asistida",
+    "📧  Avisos por email",
+])
+
+# ═════════════════════════════════════════════════════════════════════════════
+# PESTAÑA 1 · RADAR (FUNCIONAL)
+# ═════════════════════════════════════════════════════════════════════════════
+with tab1:
+    with st.sidebar:
+        st.header("Parámetros del barrido")
+        n_reg = st.slider("Publicaciones a analizar", 100, 1000, 400, step=100)
+        st.divider()
+        st.subheader("Filtros de vista")
+        palabra = st.text_input("Buscar en el objeto del contrato", "")
+        cats_sel = st.multiselect(
+            "Mostrar categorías",
+            ["🟢 PRESENTAR", "🟡 DUDOSO", "🔵 TIC (bajo importe)", "⚪ DESCARTAR", "🔴 FUERA"],
+            default=["🟢 PRESENTAR", "🟡 DUDOSO", "🔵 TIC (bajo importe)"],
+        )
+        st.divider()
+        st.markdown(f"<b style='color:{NARANJA}'>Filtros Pasiona aplicados</b>", unsafe_allow_html=True)
+        st.markdown(
+            "**Económico (Ernest Pagès):** mínimo 50.000 €, techo 300.000 € / SARA.\n\n"
+            "**Capacidades (Txema Salabert):**\n"
+            "1. Desarrollo con IA (Claude, GitHub)\n2. Desarrollo .NET\n3. Servicios UX\n"
+            "4. Servicios Agile\n5. Consultoría IA\n\n"
+            "_El resto queda fuera de radar._\n\n"
+            "**Fuente oficial:** Datos Abiertos Generalitat · PSCP. Ámbito: Catalunya."
+        )
+
+    try:
+        with st.spinner("Conectando con la fuente oficial…"):
+            df = cargar(n_reg)
+    except Exception as e:  # noqa: BLE001
+        st.error(f"No se ha podido conectar con la fuente oficial. Detalle: {e}")
+        st.stop()
+    if df.empty:
+        st.warning("La fuente oficial no ha devuelto registros. Prueba de nuevo en unos minutos.")
+        st.stop()
+
+    muestra = df.iloc[0].to_dict()
+    c_imp = primer_campo(muestra, CAMPOS_IMPORTE)
+    c_obj = primer_campo(muestra, CAMPOS_OBJETO)
+    c_org = primer_campo(muestra, CAMPOS_ORGANO)
+    c_pla = primer_campo(muestra, CAMPOS_PLAZO)
+    c_url = primer_campo(muestra, CAMPOS_URL)
+    c_exp = primer_campo(muestra, CAMPOS_EXP)
+
+    res = df.apply(lambda f: clasificar(f, c_obj, c_imp), axis=1, result_type="expand")
+    df["Categoría"] = res[0]
+    df["Motivo"] = res[1]
+
+    tot = len(df)
+    n_pres = int((df["Categoría"] == "🟢 PRESENTAR").sum())
+    n_dud = int((df["Categoría"] == "🟡 DUDOSO").sum())
+    n_tic = int((df["Categoría"] == "🔵 TIC (bajo importe)").sum())
+    n_desc = int((df["Categoría"] == "⚪ DESCARTAR").sum())
+    n_fuera = int((df["Categoría"] == "🔴 FUERA").sum())
+
+    m1, m2, m3, m4, m5, m6 = st.columns(6)
+    m1.metric("Publicaciones", tot)
+    m2.metric("🟢 Presentar", n_pres)
+    m3.metric("🟡 Dudoso", n_dud)
+    m4.metric("🔵 TIC bajo importe", n_tic)
+    m5.metric("⚪ Descartar", n_desc)
+    m6.metric("🔴 Fuera de radar", n_fuera)
+
     st.markdown(
-        "**Económico (Ernest Pagès):** mínimo 50.000 €, techo 300.000 € / SARA.\n\n"
-        "**Capacidades (Txema Salabert):**\n"
-        "1. Desarrollo con IA (Claude, GitHub)\n2. Desarrollo .NET\n3. Servicios UX\n"
-        "4. Servicios Agile\n5. Consultoría IA\n\n"
-        "_El resto queda fuera de radar._\n\n"
-        "**Fuente oficial:** Datos Abiertos Generalitat · PSCP. Ámbito: Catalunya."
+        f'<div class="cap">Barrido en vivo · {dt.datetime.now():%d/%m/%Y %H:%M} · '
+        f'fuente oficial PSCP Catalunya · clasificación según Filtros Pasiona (Ernest + Txema)</div>',
+        unsafe_allow_html=True,
     )
 
-try:
-    with st.spinner("Conectando con la fuente oficial…"):
-        df = cargar(n_reg)
-except Exception as e:  # noqa: BLE001
-    st.error(f"No se ha podido conectar con la fuente oficial. Detalle: {e}")
-    st.stop()
-if df.empty:
-    st.warning("La fuente oficial no ha devuelto registros. Prueba de nuevo en unos minutos.")
-    st.stop()
+    if n_pres == 0:
+        st.info(
+            f"Hoy no hay licitaciones **Presentar** en Catalunya que cumplan capacidad Pasiona "
+            f"y importe ≥ 50.000 €. Se han detectado **{n_tic}** licitaciones TIC de nuestras áreas "
+            f"por debajo del mínimo económico. El radar ha cribado {tot} publicaciones en segundos."
+        )
 
-muestra = df.iloc[0].to_dict()
-c_imp = primer_campo(muestra, CAMPOS_IMPORTE)
-c_obj = primer_campo(muestra, CAMPOS_OBJETO)
-c_org = primer_campo(muestra, CAMPOS_ORGANO)
-c_pla = primer_campo(muestra, CAMPOS_PLAZO)
-c_url = primer_campo(muestra, CAMPOS_URL)
-c_exp = primer_campo(muestra, CAMPOS_EXP)
+    vista = df[df["Categoría"].isin(cats_sel)].copy()
+    if palabra and c_obj:
+        vista = vista[vista[c_obj].astype(str).str.contains(palabra, case=False, na=False)]
 
-res = df.apply(lambda f: clasificar(f, c_obj, c_imp), axis=1, result_type="expand")
-df["Categoría"] = res[0]
-df["Motivo"] = res[1]
+    tabla = pd.DataFrame()
+    tabla["Categoría"] = vista["Categoría"]
+    if c_exp:
+        tabla["Cód. expediente"] = vista[c_exp].astype(str).replace(
+            {"nan": "—", "None": "—", "": "—"})
+    if c_obj:
+        tabla["Objeto del contrato"] = vista[c_obj].astype(str)
+    if c_imp:
+        tabla["Importe"] = vista[c_imp].apply(fmt_eur)
+    if c_pla:
+        tabla["Plazo"] = vista[c_pla].apply(fmt_fecha)
+    tabla["Motivo"] = vista["Motivo"]
+    if c_org:
+        tabla["Organismo"] = vista[c_org].astype(str)
 
-tot = len(df)
-n_pres = int((df["Categoría"] == "🟢 PRESENTAR").sum())
-n_dud = int((df["Categoría"] == "🟡 DUDOSO").sum())
-n_tic = int((df["Categoría"] == "🔵 TIC (bajo importe)").sum())
-n_desc = int((df["Categoría"] == "⚪ DESCARTAR").sum())
-n_fuera = int((df["Categoría"] == "🔴 FUERA").sum())
+    def construir_enlace(fila):
+        if c_url:
+            u = url_valida(fila.get(c_url, ""))
+            if u:
+                return u
+        return BUSCADOR_PSCP
 
-m1, m2, m3, m4, m5, m6 = st.columns(6)
-m1.metric("Publicaciones", tot)
-m2.metric("🟢 Presentar", n_pres)
-m3.metric("🟡 Dudoso", n_dud)
-m4.metric("🔵 TIC bajo importe", n_tic)
-m5.metric("⚪ Descartar", n_desc)
-m6.metric("🔴 Fuera de radar", n_fuera)
+    tabla["Buscar"] = vista.apply(construir_enlace, axis=1)
 
-st.markdown(
-    f'<div class="cap">Barrido en vivo · {dt.datetime.now():%d/%m/%Y %H:%M} · '
-    f'fuente oficial PSCP Catalunya · clasificación según Filtros Pasiona (Ernest + Txema)</div>',
-    unsafe_allow_html=True,
-)
+    if vista.empty:
+        st.success("No hay licitaciones en las categorías seleccionadas. "
+                   "Marca también Descartar y Fuera para ver todo lo cribado.")
+    else:
+        colcfg = {
+            "Categoría": st.column_config.TextColumn("Categoría", width="small"),
+            "Cód. expediente": st.column_config.TextColumn("Cód. expediente", width="small"),
+            "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato", width="large"),
+            "Importe": st.column_config.TextColumn("Importe", width="small"),
+            "Plazo": st.column_config.TextColumn("Plazo", width="small"),
+            "Motivo": st.column_config.TextColumn("Motivo", width="medium"),
+            "Organismo": st.column_config.TextColumn("Organismo", width="medium"),
+            "Buscar": st.column_config.LinkColumn("Buscar", display_text="Abrir buscador ↗"),
+        }
+        st.dataframe(tabla, use_container_width=True, hide_index=True,
+                     column_config=colcfg, height=460)
 
-if n_pres == 0:
-    st.info(
-        f"Hoy no hay licitaciones **Presentar** en Catalunya que cumplan capacidad Pasiona "
-        f"y importe ≥ 50.000 €. Se han detectado **{n_tic}** licitaciones TIC de nuestras áreas "
-        f"por debajo del mínimo económico. El radar ha cribado {tot} publicaciones en segundos."
+    st.download_button(
+        "Descargar (CSV)",
+        data=tabla.to_csv(index=False).encode("utf-8-sig"),
+        file_name=f"radar_pasiona_{dt.date.today():%Y%m%d}.csv",
+        mime="text/csv",
     )
 
-vista = df[df["Categoría"].isin(cats_sel)].copy()
-if palabra and c_obj:
-    vista = vista[vista[c_obj].astype(str).str.contains(palabra, case=False, na=False)]
-
-# ── Construcción de la tabla (orden pensado para leer en una línea) ──────────
-tabla = pd.DataFrame()
-tabla["Categoría"] = vista["Categoría"]
-if c_exp:
-    tabla["Código expediente"] = vista[c_exp].astype(str).replace(
-        {"nan": "—", "None": "—", "": "—"})
-if c_obj:
-    tabla["Objeto del contrato"] = vista[c_obj].astype(str)
-if c_imp:
-    tabla["Importe"] = vista[c_imp].apply(fmt_eur)
-if c_pla:
-    tabla["Plazo"] = vista[c_pla].apply(fmt_fecha)
-tabla["Motivo"] = vista["Motivo"]
-if c_org:
-    tabla["Organismo"] = vista[c_org].astype(str)
-
-
-def construir_enlace(fila):
-    # Si la API trae URL directa del anuncio, se usa; si no, se abre el
-    # buscador oficial (que funciona) para pegar el código que se ve en la tabla.
-    if c_url:
-        u = url_valida(fila.get(c_url, ""))
-        if u:
-            return u
-    return BUSCADOR_PSCP
-
-
-tabla["Buscar"] = vista.apply(construir_enlace, axis=1)
-
-if vista.empty:
-    st.success("No hay licitaciones en las categorías seleccionadas. "
-               "Marca también Descartar y Fuera para ver todo lo cribado.")
-else:
-    colcfg = {
-        "Categoría": st.column_config.TextColumn("Categoría", width="small"),
-        "Código expediente": st.column_config.TextColumn("Cód. expediente", width="small"),
-        "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato", width="large"),
-        "Importe": st.column_config.TextColumn("Importe", width="small"),
-        "Plazo": st.column_config.TextColumn("Plazo", width="small"),
-        "Motivo": st.column_config.TextColumn("Motivo", width="medium"),
-        "Organismo": st.column_config.TextColumn("Organismo", width="medium"),
-        "Buscar": st.column_config.LinkColumn("Buscar", display_text="Abrir buscador ↗"),
-    }
-    st.dataframe(tabla, use_container_width=True, hide_index=True,
-                 column_config=colcfg, height=460)
-
-st.download_button(
-    "Descargar (CSV)",
-    data=tabla.to_csv(index=False).encode("utf-8-sig"),
-    file_name=f"radar_pasiona_{dt.date.today():%Y%m%d}.csv",
-    mime="text/csv",
-)
-
-with st.expander("Qué hace y qué no hace esta demo"):
+# ═════════════════════════════════════════════════════════════════════════════
+# PESTAÑA 2 · ANALISTA DE PLIEGOS (interfaz lista · requiere API)
+# ═════════════════════════════════════════════════════════════════════════════
+with tab2:
+    st.subheader("📊 Analista de pliegos")
     st.markdown(
-        "**Filtros Pasiona aplicados (Dirección y Talent):** umbral económico definido por "
-        "Ernest Pagès (mínimo 50.000 €, techo 300.000 € / SARA) y capacidades reales definidas "
-        "por Txema Salabert (Desarrollo con IA, Desarrollo .NET, Servicios UX, Servicios Agile "
-        "y Consultoría IA). El resto queda fuera de radar.\n\n"
-        "**Categorías:** Presentar · Dudoso · TIC (bajo importe) · Descartar · Fuera de radar.\n\n"
-        "**Localización:** se muestra el código de expediente y un botón 'Buscar ↗' que abre el "
-        "buscador oficial de la Plataforma de Contractació Pública para consultar la ficha completa.\n\n"
-        "**Qué NO hace todavía (fase de producto):** leer el pliego completo (PCAP/PPT), "
-        "memoria de decisiones previas, cobertura del Estado (PLACSP) y valoración con IA "
-        "de cada caso frontera. La clasificación se basa en el objeto del contrato publicado."
+        "Sube el PDF de un pliego (PCAP/PPT) descargado del expediente y obtén "
+        "automáticamente una **checklist de requisitos**, un **resumen ejecutivo** y "
+        "**alertas** (por ejemplo, si exige una tecnología o certificación que no tenemos)."
+    )
+    st.file_uploader("Arrastra aquí el pliego en PDF", type=["pdf"], key="up_pliego")
+    st.button("Analizar pliego", type="primary", key="btn_pliego")
+    st.markdown(
+        '<div class="fase2">🔒 <b>Función configurada · pendiente de conexión con la API de IA '
+        '(fase 2 del proyecto).</b><br>La interfaz ya está lista. Al conectar el motor de IA, '
+        'el análisis se generará automáticamente. A continuación se muestra un ejemplo de cómo '
+        'se vería el resultado.</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="ej"><b>Ejemplo de resultado (simulado)</b><br><br>'
+        '<b>Resumen ejecutivo</b><br>'
+        'Servicio de desarrollo y mantenimiento evolutivo de aplicación web a medida. '
+        'Importe 96.000 € · Duración 24 meses · Procedimiento abierto.<br><br>'
+        '<b>Checklist de requisitos</b><br>'
+        '✅ Solvencia técnica: 2 proyectos similares en 3 años → <i>cumplimos</i><br>'
+        '✅ Solvencia económica: volumen ≥ 150.000 € → <i>cumplimos</i><br>'
+        '⚠️ Certificación ENS nivel medio → <i>verificar con Nadia</i><br>'
+        '✅ Equipo: 1 arquitecto .NET + 2 desarrolladores → <i>disponible</i><br><br>'
+        '<b>Dictamen sugerido</b> · 🟢 GO — encaja con capacidad .NET, importe en franja B, '
+        'plazo asumible con margen para Nadia.</div>',
+        unsafe_allow_html=True,
+    )
+
+# ═════════════════════════════════════════════════════════════════════════════
+# PESTAÑA 3 · REDACCIÓN ASISTIDA (interfaz lista · requiere API)
+# ═════════════════════════════════════════════════════════════════════════════
+with tab3:
+    st.subheader("📝 Redacción asistida de la documentación")
+    st.markdown(
+        "A partir del pliego analizado, genera **borradores** de la documentación a presentar "
+        "(memoria técnica, declaraciones, índices de sobres). Tú revisas y ajustas antes de enviar."
+    )
+    st.selectbox("Tipo de documento a redactar",
+                 ["Memoria técnica", "Declaración responsable", "Índice de sobre técnico",
+                  "Carta de presentación"], key="tipo_doc")
+    st.text_area("Notas o instrucciones para el borrador (opcional)", key="notas_doc",
+                 placeholder="Ej.: destacar experiencia en sector público y proyectos .NET…")
+    st.button("Generar borrador", type="primary", key="btn_doc")
+    st.markdown(
+        '<div class="fase2">🔒 <b>Función configurada · pendiente de conexión con la API de IA '
+        '(fase 2 del proyecto).</b><br>La interfaz ya está lista. Al conectar el motor de IA, '
+        'se generará el borrador editable. A continuación, un ejemplo de cómo se vería.</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="ej"><b>Ejemplo de borrador (simulado) · Memoria técnica</b><br><br>'
+        '<b>1. Presentación de la empresa</b><br>'
+        'Pasiona Consulting es una consultora tecnológica especializada en desarrollo de '
+        'software a medida, con foco en .NET, IA aplicada y metodologías ágiles…<br><br>'
+        '<b>2. Metodología propuesta</b><br>'
+        'Se plantea un enfoque ágil (Scrum) con entregas incrementales cada 2 semanas…<br><br>'
+        '<b>3. Equipo asignado</b><br>'
+        '1 Arquitecto de software .NET, 2 desarrolladores senior, 1 perfil UX…<br><br>'
+        '<i>[Borrador generado por IA · requiere revisión y validación experta antes de presentar]</i></div>',
+        unsafe_allow_html=True,
+    )
+
+# ═════════════════════════════════════════════════════════════════════════════
+# PESTAÑA 4 · AVISOS POR EMAIL
+# ═════════════════════════════════════════════════════════════════════════════
+with tab4:
+    st.subheader("📧 Avisos por email")
+    st.markdown(
+        "Recibe un correo automático **solo cuando el radar detecte una licitación "
+        "🟢 Presentar o 🟡 Dudoso**, para no tener que entrar a revisar cada día."
+    )
+    st.text_input("Correo donde recibir los avisos",
+                  placeholder="nombre@pasiona.com", key="email_aviso")
+    st.selectbox("Frecuencia del barrido automático",
+                 ["Cada día laborable (mañana)", "Lunes y jueves", "Solo lunes"],
+                 key="frec_aviso")
+    st.button("Activar avisos", type="primary", key="btn_email")
+    st.markdown(
+        '<div class="fase2">🔒 <b>Función configurada · se activa con una automatización externa '
+        '(GitHub Actions, gratuita).</b><br>El radar se ejecutaría solo a la hora fijada y, si hay '
+        'algún resultado 🟢/🟡, enviaría el correo con la lista. Requiere una configuración inicial '
+        'de credencial de envío (una sola vez).</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="ej"><b>Ejemplo de email (simulado)</b><br><br>'
+        '<b>Asunto:</b> 🛰️ Radar Pasiona · 1 licitación para presentar (29/07/2026)<br><br>'
+        'Buenos días,<br>El radar ha detectado hoy <b>1 licitación 🟢 Presentar</b>:<br><br>'
+        '• <b>Desarrollo de aplicación web a medida</b> · 96.000 € · Universitat de Barcelona · '
+        'plazo 21/09/2026 · Cód. 2026/90<br><br>'
+        'Puedes revisarla en el Radar. — Sistema automático Pasiona</div>',
+        unsafe_allow_html=True,
+    )
+
+# ── PIE ──────────────────────────────────────────────────────────────────────
+with st.expander("ℹ️ Qué hace y qué no hace esta demo"):
+    st.markdown(
+        "**Pestaña 1 · Radar (funcional):** se conecta en vivo a la fuente oficial (PSCP Catalunya), "
+        "aplica los Filtros Pasiona (económico de Ernest + capacidades de Txema) y clasifica cada "
+        "licitación en 5 categorías con su motivo.\n\n"
+        "**Pestañas 2, 3 y 4 (configuradas · fase 2):** la interfaz está lista, pero requieren "
+        "conexión con una API de IA (analista de pliegos y redacción) o una automatización externa "
+        "(avisos por email). Se muestran ejemplos de cómo se verá el resultado.\n\n"
+        "**Manual en esta fase:** descargar el PDF del pliego desde el expediente oficial y la "
+        "decisión final de presentarse. La clasificación del radar se basa en el objeto del contrato."
     )
 
 st.markdown(
