@@ -24,7 +24,7 @@ _CSS = (
     "<style>"
     "@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');"
     "html,body,[class*='css'],.stMarkdown,.stDataFrame{font-family:'Open Sans',sans-serif;color:#252525;}"
-    ".block-container{padding-top:2rem;max-width:1250px;}"
+    ".block-container{padding-top:2rem;max-width:1300px;}"
     "#MainMenu,footer{visibility:hidden;}"
     ".cab{display:flex;align-items:center;gap:22px;padding:6px 4px 18px 4px;border-bottom:3px solid #EA7600;margin-bottom:24px;}"
     ".cab-logo{height:40px;width:auto;}"
@@ -44,7 +44,6 @@ _CSS = (
 st.markdown(_CSS, unsafe_allow_html=True)
 
 API_PSCP = "https://analisi.transparenciacatalunya.cat/resource/ybgg-dgi6.json"
-DETALLE_PSCP = "https://contractaciopublica.cat/ca/detall-publicacio/{}"
 
 IMPORTE_MIN = 50000
 IMPORTE_MAX = 300000
@@ -164,8 +163,9 @@ CAMPOS_IMPORTE = ["pressupost_licitacio_sense", "pressupost_base_licitacio_sense
 CAMPOS_OBJETO = ["objecte_contracte", "denominacio", "objecte"]
 CAMPOS_ORGANO = ["nom_organ", "nom_departament_ens", "nom_ambit"]
 CAMPOS_PLAZO = ["termini_presentacio_ofertes", "data_fi_presentacio_ofertes"]
-CAMPOS_URL = ["enllac_publicacio", "enllac", "url_publicacio"]
-CAMPOS_EXP = ["codi_expedient", "expedient"]
+# Campos que pueden contener la URL REAL del anuncio (según dataset PSCP)
+CAMPOS_URL = ["enllac_publicacio", "enllac_stcp", "enllac", "url_publicacio",
+              "url", "enllac_web", "enllac_perfil"]
 
 
 def logo_b64():
@@ -179,7 +179,7 @@ def logo_b64():
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def cargar(limite):
-    headers = {"User-Agent": "RadarPasiona/3.3"}
+    headers = {"User-Agent": "RadarPasiona/3.4"}
     intentos = [
         {"$limit": limite, "$order": ":id DESC"},
         {"$limit": limite},
@@ -227,25 +227,25 @@ def clasificar(fila, c_obj, c_imp):
     importe = num(fila.get(c_imp, 0))
     sector, _ = detecta(objeto, NO_TIC)
     if sector:
-        return "🔴 FUERA", "—", f"No-TIC · {sector}"
+        return "🔴 FUERA", f"No-TIC · {sector}"
     desc, _ = detecta(objeto, DESCARTADAS)
     if desc:
-        return "🔴 FUERA", "—", f"Fuera de capacidades · {desc}"
+        return "🔴 FUERA", f"Fuera de capacidades · {desc}"
     area, _ = detecta(objeto, LISTA_BLANCA)
     if not area and detecta_lista(objeto, TIC_GENERICO):
         area = "Software / plataforma"
     if area:
         if importe == 0:
-            return "🟡 DUDOSO", area, "Sin importe publicado"
+            return "🟡 DUDOSO", f"{area} · sin importe publicado"
         if importe < IMPORTE_MIN:
-            return "🔵 TIC (bajo importe)", area, "Por debajo de 50.000 €"
+            return "🔵 TIC (bajo importe)", f"{area} · por debajo de 50.000 €"
         if importe > IMPORTE_MAX:
-            return "🟡 DUDOSO", area, "Supera 300.000 €"
+            return "🟡 DUDOSO", f"{area} · supera 300.000 €"
         if importe >= SARA_SERVICIOS:
-            return "🟡 DUDOSO", area, "Zona SARA: verificar"
+            return "🟡 DUDOSO", f"{area} · zona SARA: verificar"
         franja = "A" if importe < 80000 else ("B" if importe < 150000 else "C")
-        return "🟢 PRESENTAR", area, f"Franja {franja}"
-    return "🔴 FUERA", "—", "No encaja en las 5 capacidades"
+        return "🟢 PRESENTAR", f"{area} · franja {franja}"
+    return "🔴 FUERA", "No encaja en las 5 capacidades"
 
 
 def fmt_eur(v):
@@ -263,6 +263,14 @@ def fmt_fecha(v):
         except Exception:  # noqa: BLE001
             return s
     return s
+
+
+def url_valida(v):
+    """Devuelve la URL solo si es un enlace http real; si no, cadena vacía."""
+    s = str(v or "").strip()
+    if s.lower().startswith("http"):
+        return s
+    return ""
 
 
 _logo = logo_b64()
@@ -317,12 +325,10 @@ c_obj = primer_campo(muestra, CAMPOS_OBJETO)
 c_org = primer_campo(muestra, CAMPOS_ORGANO)
 c_pla = primer_campo(muestra, CAMPOS_PLAZO)
 c_url = primer_campo(muestra, CAMPOS_URL)
-c_exp = primer_campo(muestra, CAMPOS_EXP)
 
 res = df.apply(lambda f: clasificar(f, c_obj, c_imp), axis=1, result_type="expand")
 df["Categoría"] = res[0]
-df["Área"] = res[1]
-df["Motivo"] = res[2]
+df["Motivo"] = res[1]
 
 tot = len(df)
 n_pres = int((df["Categoría"] == "🟢 PRESENTAR").sum())
@@ -356,40 +362,39 @@ vista = df[df["Categoría"].isin(cats_sel)].copy()
 if palabra and c_obj:
     vista = vista[vista[c_obj].astype(str).str.contains(palabra, case=False, na=False)]
 
-cols_map = {"Categoría": "Categoría", "Área": "Área Pasiona", "Motivo": "Motivo"}
+# Construcción de la tabla (SIN columna Área para dar más espacio al Objeto)
+tabla = pd.DataFrame()
+tabla["Categoría"] = vista["Categoría"]
 if c_obj:
-    cols_map[c_obj] = "Objeto del contrato"
+    tabla["Objeto del contrato"] = vista[c_obj].astype(str)
+tabla["Motivo"] = vista["Motivo"]
 if c_org:
-    cols_map[c_org] = "Organismo"
+    tabla["Organismo"] = vista[c_org].astype(str)
 if c_imp:
-    cols_map[c_imp] = "Importe (sin IVA)"
+    tabla["Importe (sin IVA)"] = vista[c_imp].apply(fmt_eur)
 if c_pla:
-    cols_map[c_pla] = "Plazo"
-
-tabla = vista[list(cols_map.keys())].rename(columns=cols_map)
-if "Importe (sin IVA)" in tabla.columns:
-    tabla["Importe (sin IVA)"] = tabla["Importe (sin IVA)"].apply(fmt_eur)
-if "Plazo" in tabla.columns:
-    tabla["Plazo"] = tabla["Plazo"].apply(fmt_fecha)
-
-if c_url and c_url in vista.columns:
-    tabla["Expediente"] = vista[c_url].astype(str)
-elif c_exp and c_exp in vista.columns:
-    tabla["Expediente"] = vista[c_exp].astype(str).apply(lambda x: DETALLE_PSCP.format(x))
+    tabla["Plazo"] = vista[c_pla].apply(fmt_fecha)
+# Enlace: solo si la API trae una URL real (http). Si no, no se añade columna rota.
+if c_url:
+    enlaces = vista[c_url].apply(url_valida)
+    if enlaces.str.len().gt(0).any():
+        tabla["Expediente"] = enlaces
 
 if vista.empty:
     st.success("No hay licitaciones en las categorías seleccionadas. "
                "Marca también Descartar y Fuera para ver todo lo cribado.")
 else:
-    st.dataframe(
-        tabla, use_container_width=True, hide_index=True,
-        column_config={
-            "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato", width="large"),
-            "Motivo": st.column_config.TextColumn("Motivo", width="small"),
-            "Área Pasiona": st.column_config.TextColumn("Área Pasiona", width="small"),
-            "Expediente": st.column_config.LinkColumn("Expediente", display_text="Abrir ↗"),
-        },
-    )
+    colcfg = {
+        "Categoría": st.column_config.TextColumn("Categoría", width="small"),
+        "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato", width="large"),
+        "Motivo": st.column_config.TextColumn("Motivo", width="medium"),
+        "Organismo": st.column_config.TextColumn("Organismo", width="medium"),
+        "Importe (sin IVA)": st.column_config.TextColumn("Importe (sin IVA)", width="small"),
+        "Plazo": st.column_config.TextColumn("Plazo", width="small"),
+    }
+    if "Expediente" in tabla.columns:
+        colcfg["Expediente"] = st.column_config.LinkColumn("Expediente", display_text="Abrir ↗")
+    st.dataframe(tabla, use_container_width=True, hide_index=True, column_config=colcfg)
 
 st.download_button(
     "Descargar (CSV)",
@@ -407,7 +412,8 @@ with st.expander("Qué hace y qué no hace esta demo"):
         "**Categorías:** Presentar · Dudoso · TIC (bajo importe) · Descartar · Fuera de radar.\n\n"
         "**Qué NO hace todavía (fase de producto):** leer el pliego completo (PCAP/PPT), "
         "memoria de decisiones previas, cobertura del Estado (PLACSP) y valoración con IA "
-        "de cada caso frontera. La clasificación se basa en el objeto del contrato publicado."
+        "de cada caso frontera. La clasificación se basa en el objeto del contrato publicado. "
+        "El enlace al expediente se muestra únicamente cuando la fuente oficial lo proporciona."
     )
 
 st.markdown(
@@ -416,3 +422,4 @@ st.markdown(
     'Catalunya (PSCP)</div>',
     unsafe_allow_html=True,
 )
+
