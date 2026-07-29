@@ -44,8 +44,9 @@ _CSS = (
 st.markdown(_CSS, unsafe_allow_html=True)
 
 API_PSCP = "https://analisi.transparenciacatalunya.cat/resource/ybgg-dgi6.json"
-# Buscador oficial de la PSCP (Catalunya) para localizar por código de expediente
-BUSCADOR_PSCP = "https://contractaciopublica.cat/ca/cercador/?text={}"
+# Buscador oficial de la PSCP (Catalunya). Abre la página del buscador (que
+# funciona); el código de expediente se muestra en la tabla para pegarlo allí.
+BUSCADOR_PSCP = "https://contractaciopublica.cat/ca/inici"
 
 IMPORTE_MIN = 50000
 IMPORTE_MAX = 300000
@@ -362,34 +363,31 @@ vista = df[df["Categoría"].isin(cats_sel)].copy()
 if palabra and c_obj:
     vista = vista[vista[c_obj].astype(str).str.contains(palabra, case=False, na=False)]
 
-# ── Construcción de la tabla ─────────────────────────────────────────────────
+# ── Construcción de la tabla (orden pensado para leer en una línea) ──────────
 tabla = pd.DataFrame()
 tabla["Categoría"] = vista["Categoría"]
+if c_exp:
+    tabla["Código expediente"] = vista[c_exp].astype(str).replace(
+        {"nan": "—", "None": "—", "": "—"})
 if c_obj:
     tabla["Objeto del contrato"] = vista[c_obj].astype(str)
-tabla["Motivo"] = vista["Motivo"]
-if c_org:
-    tabla["Organismo"] = vista[c_org].astype(str)
 if c_imp:
     tabla["Importe"] = vista[c_imp].apply(fmt_eur)
 if c_pla:
     tabla["Plazo"] = vista[c_pla].apply(fmt_fecha)
-
-# Código de expediente (visible) + columna Buscar (enlace al buscador oficial)
-if c_exp:
-    codigos = vista[c_exp].astype(str).replace({"nan": "—", "None": "—", "": "—"})
-    tabla["Código expediente"] = codigos
+tabla["Motivo"] = vista["Motivo"]
+if c_org:
+    tabla["Organismo"] = vista[c_org].astype(str)
 
 
 def construir_enlace(fila):
+    # Si la API trae URL directa del anuncio, se usa; si no, se abre el
+    # buscador oficial (que funciona) para pegar el código que se ve en la tabla.
     if c_url:
         u = url_valida(fila.get(c_url, ""))
         if u:
             return u
-    cod = str(fila.get(c_exp, "") or "").strip() if c_exp else ""
-    if cod and cod.lower() not in ("nan", "none"):
-        return BUSCADOR_PSCP.format(requests.utils.quote(cod))
-    return BUSCADOR_PSCP.format("")
+    return BUSCADOR_PSCP
 
 
 tabla["Buscar"] = vista.apply(construir_enlace, axis=1)
@@ -399,14 +397,14 @@ if vista.empty:
                "Marca también Descartar y Fuera para ver todo lo cribado.")
 else:
     colcfg = {
-        "Categoría": st.column_config.TextColumn("Categoría"),
-        "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato"),
-        "Motivo": st.column_config.TextColumn("Motivo"),
-        "Organismo": st.column_config.TextColumn("Organismo"),
-        "Importe": st.column_config.TextColumn("Importe"),
-        "Plazo": st.column_config.TextColumn("Plazo"),
-        "Código expediente": st.column_config.TextColumn("Código expediente"),
-        "Buscar": st.column_config.LinkColumn("Buscar", display_text="Buscar ↗"),
+        "Categoría": st.column_config.TextColumn("Categoría", width="small"),
+        "Código expediente": st.column_config.TextColumn("Cód. expediente", width="small"),
+        "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato", width="large"),
+        "Importe": st.column_config.TextColumn("Importe", width="small"),
+        "Plazo": st.column_config.TextColumn("Plazo", width="small"),
+        "Motivo": st.column_config.TextColumn("Motivo", width="medium"),
+        "Organismo": st.column_config.TextColumn("Organismo", width="medium"),
+        "Buscar": st.column_config.LinkColumn("Buscar", display_text="Abrir buscador ↗"),
     }
     st.dataframe(tabla, use_container_width=True, hide_index=True,
                  column_config=colcfg, height=460)
