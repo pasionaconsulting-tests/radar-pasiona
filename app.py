@@ -24,7 +24,7 @@ _CSS = (
     "<style>"
     "@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');"
     "html,body,[class*='css'],.stMarkdown,.stDataFrame{font-family:'Open Sans',sans-serif;color:#252525;}"
-    ".block-container{padding-top:2rem;max-width:1300px;}"
+    ".block-container{padding-top:2rem;max-width:1600px;}"
     "#MainMenu,footer{visibility:hidden;}"
     ".cab{display:flex;align-items:center;gap:22px;padding:6px 4px 18px 4px;border-bottom:3px solid #EA7600;margin-bottom:24px;}"
     ".cab-logo{height:40px;width:auto;}"
@@ -44,6 +44,8 @@ _CSS = (
 st.markdown(_CSS, unsafe_allow_html=True)
 
 API_PSCP = "https://analisi.transparenciacatalunya.cat/resource/ybgg-dgi6.json"
+# Buscador oficial de la PSCP por código de expediente (funciona con codi_expedient)
+BUSCADOR_PSCP = "https://contractaciopublica.gencat.cat/ecofin_pscp/AppJava/search.pscp?reqCode=viewSearch&text={}"
 
 IMPORTE_MIN = 50000
 IMPORTE_MAX = 300000
@@ -166,6 +168,7 @@ CAMPOS_PLAZO = ["termini_presentacio_ofertes", "data_fi_presentacio_ofertes"]
 # Campos que pueden contener la URL REAL del anuncio (según dataset PSCP)
 CAMPOS_URL = ["enllac_publicacio", "enllac_stcp", "enllac", "url_publicacio",
               "url", "enllac_web", "enllac_perfil"]
+CAMPOS_EXP = ["codi_expedient", "expedient", "codi_expedient_contractacio"]
 
 
 def logo_b64():
@@ -325,6 +328,7 @@ c_obj = primer_campo(muestra, CAMPOS_OBJETO)
 c_org = primer_campo(muestra, CAMPOS_ORGANO)
 c_pla = primer_campo(muestra, CAMPOS_PLAZO)
 c_url = primer_campo(muestra, CAMPOS_URL)
+c_exp = primer_campo(muestra, CAMPOS_EXP)
 
 res = df.apply(lambda f: clasificar(f, c_obj, c_imp), axis=1, result_type="expand")
 df["Categoría"] = res[0]
@@ -374,27 +378,41 @@ if c_imp:
     tabla["Importe (sin IVA)"] = vista[c_imp].apply(fmt_eur)
 if c_pla:
     tabla["Plazo"] = vista[c_pla].apply(fmt_fecha)
-# Enlace: solo si la API trae una URL real (http). Si no, no se añade columna rota.
-if c_url:
-    enlaces = vista[c_url].apply(url_valida)
-    if enlaces.str.len().gt(0).any():
-        tabla["Expediente"] = enlaces
+# Enlace al expediente:
+#  1) si la API trae una URL real (http) se usa directamente
+#  2) si no, se construye el enlace al BUSCADOR OFICIAL de la PSCP por código
+#     de expediente (siempre lleva a la ficha real, sin inventar rutas)
+def construir_enlace(fila):
+    if c_url:
+        u = url_valida(fila.get(c_url, ""))
+        if u:
+            return u
+    if c_exp:
+        cod = str(fila.get(c_exp, "") or "").strip()
+        if cod:
+            return BUSCADOR_PSCP.format(requests.utils.quote(cod))
+    return ""
+
+enlaces = vista.apply(construir_enlace, axis=1)
+if enlaces.str.len().gt(0).any():
+    tabla["Expediente"] = enlaces
 
 if vista.empty:
     st.success("No hay licitaciones en las categorías seleccionadas. "
                "Marca también Descartar y Fuera para ver todo lo cribado.")
 else:
     colcfg = {
-        "Categoría": st.column_config.TextColumn("Categoría", width="small"),
-        "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato", width="large"),
-        "Motivo": st.column_config.TextColumn("Motivo", width="medium"),
-        "Organismo": st.column_config.TextColumn("Organismo", width="medium"),
-        "Importe (sin IVA)": st.column_config.TextColumn("Importe (sin IVA)", width="small"),
-        "Plazo": st.column_config.TextColumn("Plazo", width="small"),
+        "Categoría": st.column_config.TextColumn("Categoría"),
+        "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato"),
+        "Motivo": st.column_config.TextColumn("Motivo"),
+        "Organismo": st.column_config.TextColumn("Organismo"),
+        "Importe (sin IVA)": st.column_config.TextColumn("Importe"),
+        "Plazo": st.column_config.TextColumn("Plazo"),
     }
     if "Expediente" in tabla.columns:
         colcfg["Expediente"] = st.column_config.LinkColumn("Expediente", display_text="Abrir ↗")
-    st.dataframe(tabla, use_container_width=True, hide_index=True, column_config=colcfg)
+    st.dataframe(tabla, use_container_width=True, hide_index=True,
+                 column_config=colcfg, height=460)
 
 st.download_button(
     "Descargar (CSV)",
@@ -422,4 +440,3 @@ st.markdown(
     'Catalunya (PSCP)</div>',
     unsafe_allow_html=True,
 )
-
