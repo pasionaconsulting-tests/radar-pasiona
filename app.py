@@ -382,15 +382,20 @@ with tab1:
 
     m1, m2, m3, m4, m5, m6 = st.columns(6)
     m1.metric("Publicaciones", f"{tot:,}".replace(",", "."), help="Analizadas en este barrido")
-    m2.metric("🟢 Presentar", n_pres, delta=f"{_pct:.1f}% del total", delta_color="off")
+    _pct_es = f"{_pct:.1f}".replace(".", ",")
+    m2.metric("🟢 Presentar", n_pres, delta=f"{_pct_es}% del total", delta_color="off")
     m3.metric("🟡 Dudoso", n_dud)
     m4.metric("🔵 TIC bajo importe", n_tic)
     m5.metric("⚪ Descartar", n_desc)
     m6.metric("🔴 Fuera de radar", n_fuera)
 
+    _seg_es = f"{_seg:.1f}".replace(".", ",")
+    _txt_rel = ("1 licitación relevante" if _rel == 1
+                else f"{_rel} licitaciones relevantes")
+    _verbo = "ha dejado" if _rel == 1 else "ha dejado"
     st.markdown(
-        f'<div class="valor">✅ <b>{tot} publicaciones analizadas en {_seg:.1f} segundos.</b> '
-        f'El radar ha aplicado los Filtros Pasiona y ha dejado <b>{_rel} licitación(es) relevante(s)</b> '
+        f'<div class="valor">✅ <b>{tot} publicaciones analizadas en {_seg_es} segundos.</b> '
+        f'El radar ha aplicado los Filtros Pasiona y {_verbo} <b>{_txt_rel}</b> '
         f'para revisar, descartando {tot - _rel} que no encajan por sector, tecnología o importe. '
         f'Revisión manual equivalente estimada: varias horas.</div>',
         unsafe_allow_html=True,
@@ -442,17 +447,17 @@ with tab1:
                    "Marca también Descartar y Fuera para ver todo lo cribado.")
     else:
         colcfg = {
-            "Categoría": st.column_config.TextColumn("Estado", width="medium"),
-            "Cód. expediente": st.column_config.TextColumn("Expediente", width="medium"),
+            "Categoría": st.column_config.TextColumn("Estado", width="small"),
+            "Cód. expediente": st.column_config.TextColumn("Expediente", width="small"),
             "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato", width="large"),
             "Importe": st.column_config.TextColumn("Importe", width="small"),
             "Plazo": st.column_config.TextColumn("Plazo", width="small"),
-            "Motivo": st.column_config.TextColumn("Criterio aplicado", width="large"),
+            "Motivo": st.column_config.TextColumn("Criterio aplicado", width="medium"),
             "Organismo": st.column_config.TextColumn("Organismo", width="medium"),
             "Buscar": st.column_config.LinkColumn("Ficha", display_text="Abrir ↗", width="small"),
         }
-        # Altura dinámica: se ajusta al número de resultados (sin filas vacías)
-        alto = min(max(len(tabla) * 36 + 42, 120), 620)
+        # Altura ajustada exactamente al número de filas (sin espacios vacíos)
+        alto = min(len(tabla) * 35 + 40, 620)
         st.dataframe(tabla, use_container_width=True, hide_index=True,
                      column_config=colcfg, height=alto)
 
