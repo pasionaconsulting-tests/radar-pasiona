@@ -32,6 +32,14 @@ _CSS = (
     "div[data-testid='stImage']{overflow:visible;}"
     "div[data-testid='stImage'] img{overflow:visible;max-width:100%;height:auto;object-fit:contain;padding-left:6px;}"
     "div[data-testid='stHorizontalBlock']:first-of-type{gap:0.5rem;}"
+    ".badge-demo{background:#EA7600;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:4px;margin-left:12px;vertical-align:middle;}"
+    ".dot-live{display:inline-block;width:7px;height:7px;border-radius:50%;background:#2e9e4f;margin-right:7px;vertical-align:middle;}"
+    ".valor{background:#F7F9FA;border:1px solid #E6E6E8;border-left:4px solid #2e9e4f;border-radius:10px;padding:14px 20px;margin:4px 0 18px 0;font-size:13px;color:#252525;line-height:1.6;}"
+    ".valor b{color:#EA7600;}"
+    "div[data-testid='stMetric']{transition:border-color .2s;}"
+    "div[data-testid='stMetric']:hover{border-color:#EA7600;}"
+    "div[data-testid='stDataFrame']{border:1px solid #E6E6E8;border-radius:10px;}"
+    "div[data-testid='stExpander']{border:1px solid #E6E6E8;border-radius:10px;}"
     ".cap{color:#97999B;font-size:12px;margin:2px 2px 18px 2px;line-height:1.6;}"
     ".pie{margin-top:40px;padding-top:18px;border-top:1px solid #E6E6E8;color:#97999B;font-size:11.5px;text-align:center;line-height:1.8;}"
     ".pie b{color:#EA7600;font-weight:700;}"
@@ -290,10 +298,15 @@ with hc1:
             unsafe_allow_html=True,
         )
 with hc2:
-    st.markdown('<div class="htit">Radar de Licitaciones AAPP</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="hsub">Conectado en vivo a la fuente oficial · Plataforma de Serveis de '
-        'Contractació Pública (Generalitat de Catalunya) · Coste de infraestructura: 0 €</div>',
+        '<div class="htit">Radar de Licitaciones AAPP'
+        '<span class="badge-demo">DEMO</span></div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="hsub"><span class="dot-live"></span>Conectado en vivo a la fuente oficial · '
+        'Plataforma de Serveis de Contractació Pública (Generalitat de Catalunya) · '
+        'Infraestructura sin coste</div>',
         unsafe_allow_html=True,
     )
 st.markdown('<div class="hline"></div>', unsafe_allow_html=True)
@@ -332,9 +345,12 @@ with tab1:
             "**Fuente oficial:** Datos Abiertos Generalitat · PSCP. Ámbito: Catalunya."
         )
 
+    import time as _t
+    _ini = _t.time()
     try:
         with st.spinner("Conectando con la fuente oficial…"):
             df = cargar(n_reg)
+        _seg = max(_t.time() - _ini, 0.4)
     except Exception as e:  # noqa: BLE001
         st.error(f"No se ha podido conectar con la fuente oficial. Detalle: {e}")
         st.stop()
@@ -361,13 +377,24 @@ with tab1:
     n_desc = int((df["Categoría"] == "⚪ DESCARTAR").sum())
     n_fuera = int((df["Categoría"] == "🔴 FUERA").sum())
 
+    _pct = (n_pres / tot * 100) if tot else 0
+    _rel = n_pres + n_dud
+
     m1, m2, m3, m4, m5, m6 = st.columns(6)
-    m1.metric("Publicaciones", tot)
-    m2.metric("🟢 Presentar", n_pres)
+    m1.metric("Publicaciones", f"{tot:,}".replace(",", "."), help="Analizadas en este barrido")
+    m2.metric("🟢 Presentar", n_pres, delta=f"{_pct:.1f}% del total", delta_color="off")
     m3.metric("🟡 Dudoso", n_dud)
     m4.metric("🔵 TIC bajo importe", n_tic)
     m5.metric("⚪ Descartar", n_desc)
     m6.metric("🔴 Fuera de radar", n_fuera)
+
+    st.markdown(
+        f'<div class="valor">✅ <b>{tot} publicaciones analizadas en {_seg:.1f} segundos.</b> '
+        f'El radar ha aplicado los Filtros Pasiona y ha dejado <b>{_rel} licitación(es) relevante(s)</b> '
+        f'para revisar, descartando {tot - _rel} que no encajan por sector, tecnología o importe. '
+        f'Revisión manual equivalente estimada: varias horas.</div>',
+        unsafe_allow_html=True,
+    )
 
     st.markdown(
         f'<div class="cap">Barrido en vivo · {dt.datetime.now():%d/%m/%Y %H:%M} · '
@@ -415,17 +442,19 @@ with tab1:
                    "Marca también Descartar y Fuera para ver todo lo cribado.")
     else:
         colcfg = {
-            "Categoría": st.column_config.TextColumn("Categoría", width="small"),
-            "Cód. expediente": st.column_config.TextColumn("Cód. expediente", width="small"),
+            "Categoría": st.column_config.TextColumn("Estado", width="medium"),
+            "Cód. expediente": st.column_config.TextColumn("Expediente", width="medium"),
             "Objeto del contrato": st.column_config.TextColumn("Objeto del contrato", width="large"),
             "Importe": st.column_config.TextColumn("Importe", width="small"),
             "Plazo": st.column_config.TextColumn("Plazo", width="small"),
-            "Motivo": st.column_config.TextColumn("Motivo", width="medium"),
+            "Motivo": st.column_config.TextColumn("Criterio aplicado", width="large"),
             "Organismo": st.column_config.TextColumn("Organismo", width="medium"),
-            "Buscar": st.column_config.LinkColumn("Buscar", display_text="Abrir buscador ↗"),
+            "Buscar": st.column_config.LinkColumn("Ficha", display_text="Abrir ↗", width="small"),
         }
+        # Altura dinámica: se ajusta al número de resultados (sin filas vacías)
+        alto = min(max(len(tabla) * 36 + 42, 120), 620)
         st.dataframe(tabla, use_container_width=True, hide_index=True,
-                     column_config=colcfg, height=460)
+                     column_config=colcfg, height=alto)
 
     st.download_button(
         "Descargar (CSV)",
@@ -548,8 +577,11 @@ with st.expander("ℹ️ Qué hace y qué no hace esta demo"):
     )
 
 st.markdown(
-    '<div class="pie"><b>pasiona</b> &nbsp;·&nbsp; Radar de Licitaciones AAPP &nbsp;·&nbsp; '
-    f'Demo {dt.date.today():%Y}<br>Fuente oficial: Datos Abiertos de la Generalitat de '
-    'Catalunya (PSCP)</div>',
+    '<div class="pie"><b>pasiona</b> &nbsp;·&nbsp; <b style="color:#252525;">Radar AAPP</b> '
+    '&nbsp;·&nbsp; versión demo 1.0<br>'
+    'Fuente oficial: Datos Abiertos de la Generalitat de Catalunya · Plataforma de Serveis de '
+    f'Contractació Pública &nbsp;|&nbsp; Actualizado: {dt.datetime.now():%d/%m/%Y %H:%M}<br>'
+    '<span style="font-size:10.5px;opacity:.85;">Sistema de detección y cribado automático de '
+    'licitaciones públicas · Pasiona Consulting</span></div>',
     unsafe_allow_html=True,
 )
