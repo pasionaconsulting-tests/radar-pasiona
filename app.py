@@ -6,7 +6,6 @@ FILTROS PASIONA: umbral económico (Ernest) + capacidades (Txema).
 Coste 0 EUR. Autora: Dori Portales - 2026.
 """
 
-import base64
 import datetime as dt
 from pathlib import Path
 
@@ -20,26 +19,27 @@ GRIS = "#97999B"
 st.set_page_config(page_title="Radar de Licitaciones - Pasiona",
                    page_icon="🛰️", layout="wide")
 
+# CSS en una sola linea. line-height amplio para que NO se corten las letras.
 _CSS = (
     "<style>"
     "@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');"
     "html,body,[class*='css'],.stMarkdown,.stDataFrame{font-family:'Open Sans',sans-serif;color:#252525;}"
-    ".block-container{padding-top:2rem;max-width:1600px;}"
+    ".block-container{padding-top:2.5rem;max-width:1600px;}"
     "#MainMenu,footer{visibility:hidden;}"
-    ".htit{font-size:23px;font-weight:700;color:#252525;line-height:1.25;margin:0;}"
-    ".hsub{font-size:12.5px;color:#515151;margin-top:4px;line-height:1.5;}"
-    ".hline{border-bottom:3px solid #EA7600;margin:14px 0 20px 0;}"
-    ".cap{color:#97999B;font-size:12px;margin:2px 2px 18px 2px;}"
-    ".pie{margin-top:40px;padding-top:18px;border-top:1px solid #E6E6E8;color:#97999B;font-size:11.5px;text-align:center;line-height:1.7;}"
+    ".htit{font-size:24px;font-weight:700;color:#252525;line-height:1.6;margin:0;padding:4px 0;overflow:visible;}"
+    ".hsub{font-size:12.5px;color:#515151;line-height:1.7;margin-top:2px;padding-bottom:4px;overflow:visible;}"
+    ".hline{border-bottom:3px solid #EA7600;margin:16px 0 22px 0;}"
+    ".cap{color:#97999B;font-size:12px;margin:2px 2px 18px 2px;line-height:1.6;}"
+    ".pie{margin-top:40px;padding-top:18px;border-top:1px solid #E6E6E8;color:#97999B;font-size:11.5px;text-align:center;line-height:1.8;}"
     ".pie b{color:#EA7600;font-weight:700;}"
-    ".fase2{background:#FFF6ED;border:1px solid #F3C892;border-left:4px solid #EA7600;border-radius:10px;padding:16px 20px;margin:10px 0 18px 0;}"
+    ".fase2{background:#FFF6ED;border:1px solid #F3C892;border-left:4px solid #EA7600;border-radius:10px;padding:16px 20px;margin:10px 0 18px 0;line-height:1.7;}"
     ".fase2 b{color:#EA7600;}"
-    ".ej{background:#F7F7F8;border:1px solid #E6E6E8;border-radius:10px;padding:16px 20px;margin-top:12px;}"
+    ".ej{background:#F7F7F8;border:1px solid #E6E6E8;border-radius:10px;padding:16px 20px;margin-top:12px;line-height:1.7;}"
     "div[data-testid='stAlert']{border-radius:10px;}"
     "section[data-testid='stSidebar']{background:#F4F4F5;}"
     "div[data-testid='stMetric']{background:#fff;border:1px solid #E6E6E8;border-radius:10px;padding:14px 16px;}"
-    "div[data-testid='stMetricValue']{font-size:28px;font-weight:700;color:#252525;}"
-    "div[data-testid='stMetricLabel'] p{font-size:11.5px;color:#515151;font-weight:600;}"
+    "div[data-testid='stMetricValue']{font-size:28px;font-weight:700;color:#252525;line-height:1.4;}"
+    "div[data-testid='stMetricLabel'] p{font-size:11.5px;color:#515151;font-weight:600;line-height:1.5;}"
     ".stTabs [data-baseweb='tab-list']{gap:6px;}"
     ".stTabs [data-baseweb='tab']{font-weight:600;}"
     "</style>"
@@ -183,7 +183,7 @@ def ruta_logo():
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def cargar(limite):
-    headers = {"User-Agent": "RadarPasiona/4.2"}
+    headers = {"User-Agent": "RadarPasiona/4.3"}
     intentos = [
         {"$limit": limite, "$order": ":id DESC"},
         {"$limit": limite},
@@ -274,21 +274,21 @@ def url_valida(v):
     return s if s.lower().startswith("http") else ""
 
 
-# ── CABECERA con columnas nativas (nunca se corta) ───────────────────────────
+# ── CABECERA: columnas nativas + line-height amplio (sin cortes) ─────────────
 _logo = ruta_logo()
-hc1, hc2 = st.columns([1, 6], vertical_alignment="center")
+hc1, hc2 = st.columns([1, 5], vertical_alignment="center")
 with hc1:
     if _logo:
-        st.image(_logo, width=170)
+        st.image(_logo, width=150)
     else:
         st.markdown(
-            f"<div style='font-size:26px;font-weight:700;color:{GRIS};'>"
+            f"<div style='font-size:26px;font-weight:700;color:{GRIS};line-height:1.8;'>"
             f"pasiona<span style='color:{NARANJA};'>●</span></div>",
             unsafe_allow_html=True,
         )
 with hc2:
+    st.markdown('<div class="htit">Radar de Licitaciones AAPP</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="htit">Radar de Licitaciones AAPP</div>'
         '<div class="hsub">Conectado en vivo a la fuente oficial · Plataforma de Serveis de '
         'Contractació Pública (Generalitat de Catalunya) · Coste de infraestructura: 0 €</div>',
         unsafe_allow_html=True,
