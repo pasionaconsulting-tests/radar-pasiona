@@ -30,7 +30,8 @@ _CSS = (
     ".hsub{font-size:12.5px;color:#515151;line-height:1.7;margin-top:2px;padding-bottom:4px;overflow:visible;}"
     ".hline{border-bottom:3px solid #EA7600;margin:16px 0 22px 0;}"
     "div[data-testid='stImage']{overflow:visible;}"
-    "div[data-testid='stImage'] img{overflow:visible;max-width:100%;height:auto;object-fit:contain;}"
+    "div[data-testid='stImage'] img{overflow:visible;max-width:100%;height:auto;object-fit:contain;padding-left:6px;}"
+    "div[data-testid='stHorizontalBlock']:first-of-type{gap:0.5rem;}"
     ".cap{color:#97999B;font-size:12px;margin:2px 2px 18px 2px;line-height:1.6;}"
     ".pie{margin-top:40px;padding-top:18px;border-top:1px solid #E6E6E8;color:#97999B;font-size:11.5px;text-align:center;line-height:1.8;}"
     ".pie b{color:#EA7600;font-weight:700;}"
@@ -278,10 +279,10 @@ def url_valida(v):
 
 # ── CABECERA: columnas nativas + line-height amplio (sin cortes) ─────────────
 _logo = ruta_logo()
-hc1, hc2 = st.columns([1.5, 4.5], vertical_alignment="center")
+hc1, hc2 = st.columns([1, 6], vertical_alignment="center", gap="small")
 with hc1:
     if _logo:
-        st.image(_logo, width=130)
+        st.image(_logo, width=135)
     else:
         st.markdown(
             f"<div style='font-size:26px;font-weight:700;color:{GRIS};line-height:1.8;'>"
