@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 RADAR DE LICITACIONES AAPP - PASIONA
-App con 4 pestañas:
-  1. Radar (funcional, en vivo, fuente oficial PSCP Catalunya)
-  2. Analista de pliegos (interfaz lista · requiere conexión API IA · fase 2)
-  3. Redacción asistida (interfaz lista · requiere conexión API IA · fase 2)
-  4. Avisos por email (explicación · se activa con automatización externa)
+4 pestañas: Radar (funcional) + Analista de pliegos, Redacción y Avisos (fase 2).
 FILTROS PASIONA: umbral económico (Ernest) + capacidades (Txema).
 Coste 0 EUR. Autora: Dori Portales - 2026.
 """
@@ -30,11 +26,9 @@ _CSS = (
     "html,body,[class*='css'],.stMarkdown,.stDataFrame{font-family:'Open Sans',sans-serif;color:#252525;}"
     ".block-container{padding-top:2rem;max-width:1600px;}"
     "#MainMenu,footer{visibility:hidden;}"
-    ".cab{display:flex;align-items:center;gap:22px;padding:6px 4px 18px 4px;border-bottom:3px solid #EA7600;margin-bottom:20px;}"
-    ".cab-logo{height:40px;width:auto;}"
-    ".cab-sep{width:1px;height:42px;background:#E6E6E8;}"
-    ".cab-tit{font-size:22px;font-weight:700;color:#252525;line-height:1.15;}"
-    ".cab-sub{font-size:12.5px;color:#515151;margin-top:3px;font-weight:400;}"
+    ".htit{font-size:23px;font-weight:700;color:#252525;line-height:1.25;margin:0;}"
+    ".hsub{font-size:12.5px;color:#515151;margin-top:4px;line-height:1.5;}"
+    ".hline{border-bottom:3px solid #EA7600;margin:14px 0 20px 0;}"
     ".cap{color:#97999B;font-size:12px;margin:2px 2px 18px 2px;}"
     ".pie{margin-top:40px;padding-top:18px;border-top:1px solid #E6E6E8;color:#97999B;font-size:11.5px;text-align:center;line-height:1.7;}"
     ".pie b{color:#EA7600;font-weight:700;}"
@@ -178,18 +172,18 @@ CAMPOS_URL = ["enllac_publicacio", "enllac_stcp", "enllac", "url_publicacio",
 CAMPOS_EXP = ["codi_expedient", "expedient", "codi_expedient_contractacio"]
 
 
-def logo_b64():
+def ruta_logo():
     for n in ["Logo_Pasiona.png", "logo_pasiona.png", "Logo_RGB.png", "logo_rgb.png",
               "logo_pasiona_blanco.png", "Logo_Pasiona_Blanco.png"]:
         p = Path(n)
         if p.exists():
-            return base64.b64encode(p.read_bytes()).decode()
+            return str(p)
     return ""
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def cargar(limite):
-    headers = {"User-Agent": "RadarPasiona/4.0"}
+    headers = {"User-Agent": "RadarPasiona/4.2"}
     intentos = [
         {"$limit": limite, "$order": ":id DESC"},
         {"$limit": limite},
@@ -280,20 +274,26 @@ def url_valida(v):
     return s if s.lower().startswith("http") else ""
 
 
-# ── CABECERA ─────────────────────────────────────────────────────────────────
-_logo = logo_b64()
-if _logo:
-    _logo_html = f'<img src="data:image/png;base64,{_logo}" class="cab-logo">'
-else:
-    _logo_html = f'<span style="font-size:24px;font-weight:700;color:{GRIS};">pasiona<span style="color:{NARANJA};">●</span></span>'
-
-st.markdown(
-    '<div class="cab">' + _logo_html + '<div class="cab-sep"></div>'
-    '<div><div class="cab-tit">Radar de Licitaciones AAPP</div>'
-    '<div class="cab-sub">Conectado en vivo a la fuente oficial · Plataforma de Serveis de '
-    'Contractació Pública (Generalitat de Catalunya) · Coste de infraestructura: 0 €</div></div></div>',
-    unsafe_allow_html=True,
-)
+# ── CABECERA con columnas nativas (nunca se corta) ───────────────────────────
+_logo = ruta_logo()
+hc1, hc2 = st.columns([1, 6], vertical_alignment="center")
+with hc1:
+    if _logo:
+        st.image(_logo, width=170)
+    else:
+        st.markdown(
+            f"<div style='font-size:26px;font-weight:700;color:{GRIS};'>"
+            f"pasiona<span style='color:{NARANJA};'>●</span></div>",
+            unsafe_allow_html=True,
+        )
+with hc2:
+    st.markdown(
+        '<div class="htit">Radar de Licitaciones AAPP</div>'
+        '<div class="hsub">Conectado en vivo a la fuente oficial · Plataforma de Serveis de '
+        'Contractació Pública (Generalitat de Catalunya) · Coste de infraestructura: 0 €</div>',
+        unsafe_allow_html=True,
+    )
+st.markdown('<div class="hline"></div>', unsafe_allow_html=True)
 
 tab1, tab2, tab3, tab4 = st.tabs([
     "🛰️  Radar de licitaciones",
@@ -318,7 +318,8 @@ with tab1:
             default=["🟢 PRESENTAR", "🟡 DUDOSO", "🔵 TIC (bajo importe)"],
         )
         st.divider()
-        st.markdown(f"<b style='color:{NARANJA}'>Filtros Pasiona aplicados</b>", unsafe_allow_html=True)
+        st.markdown(f"<b style='color:{NARANJA}'>Filtros Pasiona aplicados</b>",
+                    unsafe_allow_html=True)
         st.markdown(
             "**Económico (Ernest Pagès):** mínimo 50.000 €, techo 300.000 € / SARA.\n\n"
             "**Capacidades (Txema Salabert):**\n"
@@ -431,7 +432,7 @@ with tab1:
     )
 
 # ═════════════════════════════════════════════════════════════════════════════
-# PESTAÑA 2 · ANALISTA DE PLIEGOS (interfaz lista · requiere API)
+# PESTAÑA 2 · ANALISTA DE PLIEGOS
 # ═════════════════════════════════════════════════════════════════════════════
 with tab2:
     st.subheader("📊 Analista de pliegos")
@@ -445,8 +446,8 @@ with tab2:
     st.markdown(
         '<div class="fase2">🔒 <b>Función configurada · pendiente de conexión con la API de IA '
         '(fase 2 del proyecto).</b><br>La interfaz ya está lista. Al conectar el motor de IA, '
-        'el análisis se generará automáticamente. A continuación se muestra un ejemplo de cómo '
-        'se vería el resultado.</div>',
+        'el análisis se generará automáticamente. Mientras tanto, este análisis se realiza de '
+        'forma manual con el asistente de IA corporativo. Ver documento de configuración adjunto.</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -457,21 +458,21 @@ with tab2:
         '<b>Checklist de requisitos</b><br>'
         '✅ Solvencia técnica: 2 proyectos similares en 3 años → <i>cumplimos</i><br>'
         '✅ Solvencia económica: volumen ≥ 150.000 € → <i>cumplimos</i><br>'
-        '⚠️ Certificación ENS nivel medio → <i>verificar con Nadia</i><br>'
+        '⚠️ Certificación ENS nivel medio → <i>verificar</i><br>'
         '✅ Equipo: 1 arquitecto .NET + 2 desarrolladores → <i>disponible</i><br><br>'
         '<b>Dictamen sugerido</b> · 🟢 GO — encaja con capacidad .NET, importe en franja B, '
-        'plazo asumible con margen para Nadia.</div>',
+        'plazo asumible.</div>',
         unsafe_allow_html=True,
     )
 
 # ═════════════════════════════════════════════════════════════════════════════
-# PESTAÑA 3 · REDACCIÓN ASISTIDA (interfaz lista · requiere API)
+# PESTAÑA 3 · REDACCIÓN ASISTIDA
 # ═════════════════════════════════════════════════════════════════════════════
 with tab3:
     st.subheader("📝 Redacción asistida de la documentación")
     st.markdown(
         "A partir del pliego analizado, genera **borradores** de la documentación a presentar "
-        "(memoria técnica, declaraciones, índices de sobres). Tú revisas y ajustas antes de enviar."
+        "(memoria técnica, declaraciones, índices de sobres). Se revisan y ajustan antes de enviar."
     )
     st.selectbox("Tipo de documento a redactar",
                  ["Memoria técnica", "Declaración responsable", "Índice de sobre técnico",
@@ -481,8 +482,9 @@ with tab3:
     st.button("Generar borrador", type="primary", key="btn_doc")
     st.markdown(
         '<div class="fase2">🔒 <b>Función configurada · pendiente de conexión con la API de IA '
-        '(fase 2 del proyecto).</b><br>La interfaz ya está lista. Al conectar el motor de IA, '
-        'se generará el borrador editable. A continuación, un ejemplo de cómo se vería.</div>',
+        '(fase 2 del proyecto).</b><br>La interfaz ya está lista. Actualmente esta redacción se '
+        'realiza de forma manual con el asistente de IA corporativo. Ver documento de '
+        'configuración adjunto.</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -517,12 +519,12 @@ with tab4:
         '<div class="fase2">🔒 <b>Función configurada · se activa con una automatización externa '
         '(GitHub Actions, gratuita).</b><br>El radar se ejecutaría solo a la hora fijada y, si hay '
         'algún resultado 🟢/🟡, enviaría el correo con la lista. Requiere una configuración inicial '
-        'de credencial de envío (una sola vez).</div>',
+        'de credencial de envío. Ver documento de configuración adjunto.</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
         '<div class="ej"><b>Ejemplo de email (simulado)</b><br><br>'
-        '<b>Asunto:</b> 🛰️ Radar Pasiona · 1 licitación para presentar (29/07/2026)<br><br>'
+        '<b>Asunto:</b> 🛰️ Radar Pasiona · 1 licitación para presentar<br><br>'
         'Buenos días,<br>El radar ha detectado hoy <b>1 licitación 🟢 Presentar</b>:<br><br>'
         '• <b>Desarrollo de aplicación web a medida</b> · 96.000 € · Universitat de Barcelona · '
         'plazo 21/09/2026 · Cód. 2026/90<br><br>'
@@ -530,17 +532,16 @@ with tab4:
         unsafe_allow_html=True,
     )
 
-# ── PIE ──────────────────────────────────────────────────────────────────────
 with st.expander("ℹ️ Qué hace y qué no hace esta demo"):
     st.markdown(
         "**Pestaña 1 · Radar (funcional):** se conecta en vivo a la fuente oficial (PSCP Catalunya), "
         "aplica los Filtros Pasiona (económico de Ernest + capacidades de Txema) y clasifica cada "
         "licitación en 5 categorías con su motivo.\n\n"
         "**Pestañas 2, 3 y 4 (configuradas · fase 2):** la interfaz está lista, pero requieren "
-        "conexión con una API de IA (analista de pliegos y redacción) o una automatización externa "
-        "(avisos por email). Se muestran ejemplos de cómo se verá el resultado.\n\n"
+        "conexión con una API de IA o una automatización externa. Se muestran ejemplos de cómo "
+        "se verá el resultado.\n\n"
         "**Manual en esta fase:** descargar el PDF del pliego desde el expediente oficial y la "
-        "decisión final de presentarse. La clasificación del radar se basa en el objeto del contrato."
+        "decisión final de presentarse."
     )
 
 st.markdown(
